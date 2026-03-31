@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { FoodItem, calculateSmartScore } from '@/lib/usda-api';
+import { FoodItem, calculateSmartScore, getNutrientValue } from '@/lib/usda-api';
 import confetti from 'canvas-confetti';
 
 export interface UserProfile {
   name: string;
-  weight: number;
-  height: number;
+  weight: number; // kg
+  height: number; // cm
   age: number;
   gender: 'male' | 'female' | 'other';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
@@ -13,10 +13,16 @@ export interface UserProfile {
   proteinGoal: number;
 }
 
+export interface Recipe {
+  id: string;
+  name: string;
+  ingredients: { food: FoodItem; amount: number }[];
+}
+
 export interface LogEntry {
   id: string;
   food: FoodItem;
-  amount: number; // in grams
+  amount: number;
   timestamp: number;
 }
 
@@ -42,7 +48,7 @@ const INITIAL_PROFILE: UserProfile = {
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
   { id: 'first_log', title: 'First Bite', description: 'Log your first food item', icon: '🍎', unlocked: false },
   { id: 'protein_king', title: 'Protein King', description: 'Hit your protein goal', icon: '💪', unlocked: false },
-  { id: 'streak_3', title: 'Consistent', description: '3 day logging streak', icon: '🔥', unlocked: false },
+  { id: 'recipe_master', title: 'Chef de Cuisine', description: 'Create your first recipe', icon: '👨‍🍳', unlocked: false },
 ];
 
 export function useNutritionStore() {
@@ -56,6 +62,11 @@ export function useNutritionStore() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [recipes, setRecipes] = useState<Recipe[]>(() => {
+    const saved = localStorage.getItem('nutrition_recipes');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [points, setPoints] = useState(() => Number(localStorage.getItem('nutrition_points') || 0));
   const [achievements, setAchievements] = useState<Achievement[]>(() => {
     const saved = localStorage.getItem('nutrition_achievements');
@@ -65,9 +76,10 @@ export function useNutritionStore() {
   useEffect(() => {
     localStorage.setItem('nutrition_profile', JSON.stringify(profile));
     localStorage.setItem('nutrition_logs', JSON.stringify(logs));
+    localStorage.setItem('nutrition_recipes', JSON.stringify(recipes));
     localStorage.setItem('nutrition_points', points.toString());
     localStorage.setItem('nutrition_achievements', JSON.stringify(achievements));
-  }, [profile, logs, points, achievements]);
+  }, [profile, logs, recipes, points, achievements]);
 
   const addLog = (food: FoodItem, amount: number) => {
     const newLog: LogEntry = {
@@ -79,6 +91,17 @@ export function useNutritionStore() {
     setLogs(prev => [...prev, newLog]);
     addPoints(10);
     checkAchievements('first_log');
+  };
+
+  const addRecipe = (name: string, ingredients: { food: FoodItem; amount: number }[]) => {
+    const newRecipe: Recipe = {
+      id: Math.random().toString(36).substr(2, 9),
+      name,
+      ingredients,
+    };
+    setRecipes(prev => [...prev, newRecipe]);
+    addPoints(50);
+    checkAchievements('recipe_master');
   };
 
   const addPoints = (amount: number) => {
@@ -96,9 +119,16 @@ export function useNutritionStore() {
     }));
   };
 
-  const deleteLog = (id: string) => {
-    setLogs(prev => prev.filter(l => l.id !== id));
+  const calculateBMI = () => {
+    const heightInMeters = profile.height / 100;
+    return (profile.weight / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
-  return { profile, setProfile, logs, addLog, deleteLog, points, achievements, addPoints };
+  return { 
+    profile, setProfile, 
+    logs, addLog, 
+    recipes, addRecipe,
+    points, achievements, 
+    addPoints, calculateBMI 
+  };
 }
