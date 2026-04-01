@@ -15,6 +15,7 @@ export interface FoodItem {
   servingSize?: number;
   servingSizeUnit?: string;
   brandOwner?: string;
+  dataType?: string;
 }
 
 export const MOCK_FOODS: FoodItem[] = [
@@ -42,9 +43,9 @@ export const MOCK_FOODS: FoodItem[] = [
   }
 ];
 
-export async function searchFoods(query: string): Promise<FoodItem[]> {
+export async function searchFoods(query: string, pageSize: number = 25): Promise<FoodItem[]> {
   try {
-    const response = await fetch(`${BASE_URL}/foods/search?query=${encodeURIComponent(query)}&api_key=${USDA_API_KEY}&pageSize=10`);
+    const response = await fetch(`${BASE_URL}/foods/search?query=${encodeURIComponent(query)}&api_key=${USDA_API_KEY}&pageSize=${pageSize}`);
     if (!response.ok) throw new Error("API limit or error");
     const data = await response.json();
     return data.foods || [];
