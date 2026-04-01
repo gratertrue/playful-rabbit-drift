@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
-import { getNutrientValue } from '@/lib/usda-api';
+import { getNutrientValue, calculateSmartScore } from '@/lib/usda-api';
 import { Flame, Target, Trophy, Zap } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
