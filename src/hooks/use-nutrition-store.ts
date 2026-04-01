@@ -38,14 +38,9 @@ export interface Achievement {
 
 export interface WearableData {
   steps: number;
-  heartRate: number;
   sleepHours: number;
-}
-
-export interface MealPlan {
-  id: string;
-  name: string;
-  days: { [key: string]: Recipe[] }; // Day of week -> Recipes
+  isSleeping: boolean;
+  sleepStartTime: number | null;
 }
 
 const INITIAL_PROFILE: UserProfile = {
@@ -92,7 +87,7 @@ export function useNutritionStore() {
 
   const [wearableData, setWearableData] = useState<WearableData>(() => {
     const saved = localStorage.getItem('nutrition_wearable');
-    return saved ? JSON.parse(saved) : { steps: 8432, heartRate: 68, sleepHours: 7.5 };
+    return saved ? JSON.parse(saved) : { steps: 8432, sleepHours: 7.5, isSleeping: false, sleepStartTime: null };
   });
 
   const [waterIntake, setWaterIntake] = useState(() => Number(localStorage.getItem('nutrition_water') || 0));
@@ -123,6 +118,23 @@ export function useNutritionStore() {
     setLogs(prev => [...prev, newLog]);
     addPoints(10);
     checkAchievements('first_log');
+  };
+
+  const toggleSleep = () => {
+    setWearableData(prev => {
+      if (!prev.isSleeping) {
+        return { ...prev, isSleeping: true, sleepStartTime: Date.now() };
+      } else {
+        const durationMs = Date.now() - (prev.sleepStartTime || Date.now());
+        const durationHours = Number((durationMs / (1000 * 60 * 60)).toFixed(1));
+        return { 
+          ...prev, 
+          isSleeping: false, 
+          sleepStartTime: null, 
+          sleepHours: prev.sleepHours + durationHours 
+        };
+      }
+    });
   };
 
   const addWater = (amount: number) => {
@@ -173,15 +185,8 @@ export function useNutritionStore() {
 
   const calculateBMI = () => {
     const heightInMeters = profile.height / 100;
+    if (heightInMeters === 0) return "0.0";
     return (profile.weight / (heightInMeters * heightInMeters)).toFixed(1);
-  };
-
-  const getMacroSplit = () => {
-    switch (profile.goal) {
-      case 'weight_loss': return { protein: 40, carbs: 30, fat: 30 };
-      case 'muscle_gain': return { protein: 30, carbs: 40, fat: 30 };
-      default: return { protein: 30, carbs: 40, fat: 30 };
-    }
   };
 
   return { 
@@ -189,10 +194,15 @@ export function useNutritionStore() {
     logs, addLog, 
     recipes, addRecipe,
     mealPlans, addMealPlan,
-    wearableData, setWearableData,
+    wearableData, toggleSleep,
     waterIntake, addWater, setWaterIntake,
     points, achievements, 
-    addPoints, calculateBMI,
-    getMacroSplit
+    addPoints, calculateBMI
   };
+}
+
+export interface MealPlan {
+  id: string;
+  name: string;
+  days: { [key: string]: Recipe[] };
 }

@@ -14,19 +14,20 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { showSuccess } from '@/utils/toast';
-import { Scale, User as UserIcon, Activity, Zap, Flame, Moon, Footprints, Heart } from 'lucide-react';
+import { Scale, User as UserIcon, Activity, Zap, Moon, Footprints, Play, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { profile, setProfile, achievements, calculateBMI, wearableData } = useNutritionStore();
+  const { profile, setProfile, achievements, calculateBMI, wearableData, toggleSleep } = useNutritionStore();
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className="p-3 bg-cyan-500/10 rounded-xl">
@@ -38,26 +39,37 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-3 bg-red-500/10 rounded-xl">
-                    <Heart className="h-6 w-6 text-red-400" />
+              <Card className={cn(
+                "bg-slate-900/50 border-slate-800 backdrop-blur-xl transition-all duration-500",
+                wearableData.isSleeping && "border-purple-500/50 bg-purple-500/5"
+              )}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "p-3 rounded-xl transition-colors",
+                      wearableData.isSleeping ? "bg-purple-500/20" : "bg-purple-500/10"
+                    )}>
+                      <Moon className={cn("h-6 w-6", wearableData.isSleeping ? "text-purple-300 animate-pulse" : "text-purple-400")} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase">Sleep Tracker</p>
+                      <p className="text-xl font-bold text-white">
+                        {wearableData.isSleeping ? "Tracking..." : `${wearableData.sleepHours}h Total`}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase">Avg Heart Rate</p>
-                    <p className="text-xl font-bold text-white">{wearableData.heartRate} BPM</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-3 bg-purple-500/10 rounded-xl">
-                    <Moon className="h-6 w-6 text-purple-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase">Sleep</p>
-                    <p className="text-xl font-bold text-white">{wearableData.sleepHours}h</p>
-                  </div>
+                  <Button 
+                    onClick={toggleSleep}
+                    variant={wearableData.isSleeping ? "destructive" : "secondary"}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {wearableData.isSleeping ? (
+                      <><Square className="h-3 w-3" /> Wake Up</>
+                    ) : (
+                      <><Play className="h-3 w-3" /> Start Sleep</>
+                    )}
+                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -91,12 +103,20 @@ const Index = () => {
         return (
           <div className="space-y-6 max-w-4xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-slate-900/50 border-slate-800">
+              <Card className="bg-slate-900/50 border-slate-800 border-t-4 border-t-cyan-500">
                 <CardContent className="p-6 flex flex-col items-center text-center">
                   <Scale className="h-8 w-8 text-cyan-400 mb-2" />
-                  <p className="text-xs text-slate-500 uppercase">Current BMI</p>
-                  <p className="text-3xl font-bold text-white">{calculateBMI()}</p>
-                  <p className="text-[10px] text-slate-400 mt-1">Healthy range: 18.5 - 24.9</p>
+                  <p className="text-xs text-slate-500 uppercase font-bold">BMI Calculator</p>
+                  <p className="text-4xl font-black text-white my-2">{calculateBMI()}</p>
+                  <div className={cn(
+                    "text-[10px] px-2 py-1 rounded-full font-bold uppercase",
+                    Number(calculateBMI()) < 18.5 ? "bg-blue-500/20 text-blue-400" :
+                    Number(calculateBMI()) < 25 ? "bg-green-500/20 text-green-400" :
+                    "bg-red-500/20 text-red-400"
+                  )}>
+                    {Number(calculateBMI()) < 18.5 ? "Underweight" :
+                     Number(calculateBMI()) < 25 ? "Healthy Weight" : "Overweight"}
+                  </div>
                 </CardContent>
               </Card>
               <Card className="bg-slate-900/50 border-slate-800">
@@ -191,7 +211,10 @@ const Index = () => {
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {achievements.map(a => (
-              <Card key={a.id} className={`bg-slate-900/50 border-slate-800 transition-all duration-500 ${a.unlocked ? 'opacity-100 scale-100' : 'opacity-40 grayscale scale-95'}`}>
+              <Card key={a.id} className={cn(
+                "bg-slate-900/50 border-slate-800 transition-all duration-500",
+                a.unlocked ? 'opacity-100 scale-100 border-cyan-500/30' : 'opacity-40 grayscale scale-95'
+              )}>
                 <CardContent className="p-6 text-center space-y-2">
                   <div className="text-4xl mb-2">{a.icon}</div>
                   <h3 className="text-white font-bold">{a.title}</h3>
@@ -203,12 +226,7 @@ const Index = () => {
           </div>
         );
       default:
-        return (
-          <div className="flex flex-col items-center justify-center h-[60vh] text-slate-500">
-            <h2 className="text-2xl font-bold mb-2">Coming Soon</h2>
-            <p>This feature is currently under development.</p>
-          </div>
-        );
+        return null;
     }
   };
 
