@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Search, Utensils, Calendar, History, User, Trophy, Droplets, Zap, Flame } from 'lucide-react';
+import { LayoutDashboard, Search, Utensils, Calendar, History, User, Trophy, Droplets, Zap, Flame, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -10,6 +10,7 @@ interface SidebarProps {
 const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'debt', label: 'Debt Tracker', icon: Wallet },
     { id: 'search', label: 'Food Lookup', icon: Search },
     { id: 'recipes', label: 'Recipe Builder', icon: Utensils },
     { id: 'planner', label: 'Meal Planner', icon: Calendar },

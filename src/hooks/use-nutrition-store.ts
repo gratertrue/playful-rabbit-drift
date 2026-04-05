@@ -92,6 +92,7 @@ export function useNutritionStore() {
 
   const [waterIntake, setWaterIntake] = useState(() => Number(localStorage.getItem('nutrition_water') || 0));
   const [points, setPoints] = useState(() => Number(localStorage.getItem('nutrition_points') || 0));
+  const [totalSavings, setTotalSavings] = useState(() => Number(localStorage.getItem('nutrition_savings') || 0));
   const [achievements, setAchievements] = useState<Achievement[]>(() => {
     const saved = localStorage.getItem('nutrition_achievements');
     return saved ? JSON.parse(saved) : INITIAL_ACHIEVEMENTS;
@@ -105,8 +106,9 @@ export function useNutritionStore() {
     localStorage.setItem('nutrition_wearable', JSON.stringify(wearableData));
     localStorage.setItem('nutrition_water', waterIntake.toString());
     localStorage.setItem('nutrition_points', points.toString());
+    localStorage.setItem('nutrition_savings', totalSavings.toString());
     localStorage.setItem('nutrition_achievements', JSON.stringify(achievements));
-  }, [profile, logs, recipes, mealPlans, wearableData, waterIntake, points, achievements]);
+  }, [profile, logs, recipes, mealPlans, wearableData, waterIntake, points, totalSavings, achievements]);
 
   const addLog = (food: FoodItem, amount: number) => {
     const newLog: LogEntry = {
@@ -117,6 +119,7 @@ export function useNutritionStore() {
     };
     setLogs(prev => [...prev, newLog]);
     addPoints(10);
+    setTotalSavings(prev => prev + 12); // Assume $12 saved per home-cooked meal log
     checkAchievements('first_log');
   };
 
@@ -190,7 +193,6 @@ export function useNutritionStore() {
   };
 
   const calculateRecommendedCalories = () => {
-    // Mifflin-St Jeor Equation
     let bmr = (10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age);
     if (profile.gender === 'male') bmr += 5;
     else bmr -= 161;
@@ -218,7 +220,7 @@ export function useNutritionStore() {
     mealPlans, addMealPlan,
     wearableData, toggleSleep,
     waterIntake, addWater, setWaterIntake,
-    points, achievements, 
+    points, achievements, totalSavings,
     addPoints, calculateBMI, calculateRecommendedCalories
   };
 }

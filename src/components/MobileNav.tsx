@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Search, Utensils, Calendar, User } from 'lucide-react';
+import { LayoutDashboard, Search, Utensils, Calendar, User, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MobileNavProps {
@@ -10,9 +10,9 @@ interface MobileNavProps {
 const MobileNav = ({ activeTab, setActiveTab }: MobileNavProps) => {
   const items = [
     { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
+    { id: 'debt', label: 'Debt', icon: Wallet },
     { id: 'search', label: 'Search', icon: Search },
     { id: 'recipes', label: 'Recipes', icon: Utensils },
-    { id: 'planner', label: 'Plan', icon: Calendar },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
