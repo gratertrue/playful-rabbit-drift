@@ -1,28 +1,15 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
-import { useDebtStore } from '@/hooks/use-debt-store';
-import { Sparkles, Brain, Lightbulb, AlertTriangle, PiggyBank, TrendingDown } from 'lucide-react';
+import { Sparkles, Brain, Lightbulb, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const SmartCoach = () => {
-  const { logs, waterIntake, profile, wearableData, totalSavings } = useNutritionStore();
-  const { debts, strategy, getSortedDebts } = useDebtStore();
+  const { logs, waterIntake, profile, wearableData } = useNutritionStore();
 
   const getInsights = () => {
     const insights = [];
     
-    // Financial Insight
-    if (totalSavings > 0 && debts.length > 0) {
-      const targetDebt = getSortedDebts()[0];
-      insights.push({
-        type: 'finance',
-        icon: PiggyBank,
-        color: 'text-green-400',
-        text: `By cooking at home, you've saved $${totalSavings}! Apply this to your ${targetDebt.name} to speed up your ${strategy} payoff.`
-      });
-    }
-
     // Hydration check
     if (waterIntake < profile.waterGoal * 0.5) {
       insights.push({
@@ -40,6 +27,21 @@ const SmartCoach = () => {
         icon: Lightbulb,
         color: 'text-cyan-400',
         text: "Try to get a 15-minute walk in. You're currently below your average step count."
+      });
+    }
+
+    // Protein check
+    const todayProtein = logs.reduce((acc, log) => {
+      const protein = log.food.foodNutrients.find(n => n.nutrientName === "Protein")?.value || 0;
+      return acc + (protein * (log.amount / 100));
+    }, 0);
+
+    if (todayProtein < profile.proteinGoal * 0.3 && logs.length > 0) {
+      insights.push({
+        type: 'advice',
+        icon: Brain,
+        color: 'text-purple-400',
+        text: "Your protein intake is low today. Consider adding Greek yogurt or lean meat to your next meal."
       });
     }
 

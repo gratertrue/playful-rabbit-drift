@@ -8,7 +8,6 @@ import MealPlanner from '@/components/MealPlanner';
 import NutritionHistory from '@/components/NutritionHistory';
 import WaterTracker from '@/components/WaterTracker';
 import SmartCoach from '@/components/SmartCoach';
-import DebtDashboard from '@/components/DebtDashboard';
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { showSuccess } from '@/utils/toast';
-import { Scale, User as UserIcon, Activity, Zap, Moon, Footprints, Play, Square, Utensils, Calendar, Calculator, Wallet } from 'lucide-react';
+import { Scale, User as UserIcon, Activity, Zap, Moon, Footprints, Play, Square, Utensils, Calendar, Calculator } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -82,14 +81,14 @@ const Index = () => {
               </Card>
               <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
                 <CardContent className="p-4 flex items-center justify-around h-full">
-                  <Button variant="ghost" onClick={() => setActiveTab('debt')} className="flex flex-col gap-1 h-auto py-2 text-slate-400 hover:text-red-400">
-                    <Wallet className="h-5 w-5" />
-                    <span className="text-[10px] uppercase font-bold">Debt</span>
-                  </Button>
-                  <div className="w-px h-8 bg-slate-800" />
                   <Button variant="ghost" onClick={() => setActiveTab('recipes')} className="flex flex-col gap-1 h-auto py-2 text-slate-400 hover:text-cyan-400">
                     <Utensils className="h-5 w-5" />
                     <span className="text-[10px] uppercase font-bold">Recipes</span>
+                  </Button>
+                  <div className="w-px h-8 bg-slate-800" />
+                  <Button variant="ghost" onClick={() => setActiveTab('planner')} className="flex flex-col gap-1 h-auto py-2 text-slate-400 hover:text-cyan-400">
+                    <Calendar className="h-5 w-5" />
+                    <span className="text-[10px] uppercase font-bold">Planner</span>
                   </Button>
                 </CardContent>
               </Card>
@@ -106,8 +105,6 @@ const Index = () => {
             </div>
           </div>
         );
-      case 'debt':
-        return <DebtDashboard />;
       case 'search':
         return <FoodSearch />;
       case 'recipes':
