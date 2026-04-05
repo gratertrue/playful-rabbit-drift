@@ -12,67 +12,42 @@ export interface FoodItem {
   fdcId: number;
   description: string;
   foodNutrients: Nutrient[];
-  servingSize?: number;
-  servingSizeUnit?: string;
-  brandOwner?: string;
-  dataType?: string;
 }
 
-export const MOCK_FOODS: FoodItem[] = [
-  {
-    fdcId: 11060,
-    description: "Apple, raw",
-    foodNutrients: [
-      { nutrientId: 1008, nutrientName: "Energy", value: 52, unitName: "KCAL" },
-      { nutrientId: 1003, nutrientName: "Protein", value: 0.26, unitName: "G" },
-      { nutrientId: 1004, nutrientName: "Total lipid (fat)", value: 0.17, unitName: "G" },
-      { nutrientId: 1005, nutrientName: "Carbohydrate", value: 13.81, unitName: "G" },
-      { nutrientId: 1079, nutrientName: "Fiber", value: 2.4, unitName: "G" },
-      { nutrientId: 2000, nutrientName: "Sugars", value: 10.39, unitName: "G" },
-    ]
-  },
-  {
-    fdcId: 171477,
-    description: "Chicken breast, grilled",
-    foodNutrients: [
-      { nutrientId: 1008, nutrientName: "Energy", value: 165, unitName: "KCAL" },
-      { nutrientId: 1003, nutrientName: "Protein", value: 31, unitName: "G" },
-      { nutrientId: 1004, nutrientName: "Total lipid (fat)", value: 3.6, unitName: "G" },
-      { nutrientId: 1005, nutrientName: "Carbohydrate", value: 0, unitName: "G" },
-    ]
-  }
-];
-
-export async function searchFoods(query: string, pageSize: number = 25): Promise<FoodItem[]> {
+export const searchFoods = async (query: string, pageSize: number = 25): Promise<FoodItem[]> => {
   try {
     const response = await fetch(`${BASE_URL}/foods/search?query=${encodeURIComponent(query)}&api_key=${USDA_API_KEY}&pageSize=${pageSize}`);
-    if (!response.ok) throw new Error("API limit or error");
     const data = await response.json();
     return data.foods || [];
   } catch (error) {
-    console.error("USDA API Error, falling back to mock data:", error);
-    return MOCK_FOODS.filter(f => f.description.toLowerCase().includes(query.toLowerCase()));
+    console.error("USDA API Error:", error);
+    return [];
   }
-}
+};
 
-export function getNutrientValue(nutrients: Nutrient[], nameOrId: string | number): number {
-  const nutrient = nutrients.find(n => 
-    typeof nameOrId === 'number' ? n.nutrientId === nameOrId : n.nutrientName.toLowerCase().includes(nameOrId.toLowerCase())
-  );
+export function getNutrientValue(nutrients: Nutrient[], name: string): number {
+  const nutrient = nutrients.find(n => n.nutrientName.toLowerCase().includes(name.toLowerCase()));
   return nutrient ? nutrient.value : 0;
 }
 
-export function calculateSmartScore(nutrients: Nutrient[]): number {
-  const protein = getNutrientValue(nutrients, "Protein");
-  const fiber = getNutrientValue(nutrients, "Fiber");
-  const sugar = getNutrientValue(nutrients, "Sugars");
+export type RiskLevel = 'Low' | 'Medium' | 'High';
+
+export function calculateGerdRisk(food: FoodItem): { level: RiskLevel; reason: string } {
+  const nutrients = food.foodNutrients;
   const fat = getNutrientValue(nutrients, "Total lipid (fat)");
+  const sugar = getNutrientValue(nutrients, "Sugars");
+  const desc = food.description.toLowerCase();
+
+  // Known high-risk keywords
+  const highRiskKeywords = ['spicy', 'chili', 'pepper', 'mint', 'chocolate', 'coffee', 'caffeine', 'citrus', 'lemon', 'orange', 'tomato', 'fried'];
   
-  let score = 50; // Base score
-  score += Math.min(protein * 2, 20);
-  score += Math.min(fiber * 3, 15);
-  score -= Math.min(sugar * 1.5, 20);
-  score -= Math.min(fat * 0.5, 15);
+  if (fat > 15 || highRiskKeywords.some(k => desc.includes(k))) {
+    return { level: 'High', reason: fat > 15 ? 'High fat content' : 'Contains known trigger ingredients' };
+  }
   
-  return Math.max(0, Math.min(100, Math.round(score)));
+  if (fat > 8 || sugar > 15) {
+    return { level: 'Medium', reason: 'Moderate fat or sugar content' };
+  }
+
+  return { level: 'Low', reason: 'Low fat and non-acidic profile' };
 }

@@ -1,24 +1,19 @@
 import { useState, useEffect } from 'react';
-import { FoodItem, calculateSmartScore, getNutrientValue } from '@/lib/usda-api';
+import { FoodItem, getNutrientValue } from '@/lib/usda-api';
 import confetti from 'canvas-confetti';
 
 export interface UserProfile {
   name: string;
-  weight: number; // kg
-  height: number; // cm
+  weight: number;
+  height: number;
   age: number;
   gender: 'male' | 'female' | 'other';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   calorieGoal: number;
   proteinGoal: number;
-  waterGoal: number; // ml
+  waterGoal: number;
   goal: 'weight_loss' | 'muscle_gain' | 'maintenance';
-}
-
-export interface Recipe {
-  id: string;
-  name: string;
-  ingredients: { food: FoodItem; amount: number }[];
+  hasAcceptedDisclaimer: boolean;
 }
 
 export interface LogEntry {
@@ -28,23 +23,22 @@ export interface LogEntry {
   timestamp: number;
 }
 
-export interface Achievement {
+export interface SymptomEntry {
   id: string;
-  title: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
+  type: 'heartburn' | 'regurgitation' | 'chest_pain' | 'bloating' | 'nausea';
+  severity: number; // 0-10
+  timestamp: number;
+  notes?: string;
 }
 
-export interface WearableData {
-  steps: number;
-  sleepHours: number;
-  isSleeping: boolean;
-  sleepStartTime: number | null;
+export interface Recipe {
+  id: string;
+  name: string;
+  ingredients: { food: FoodItem; amount: number }[];
 }
 
 const INITIAL_PROFILE: UserProfile = {
-  name: "Explorer",
+  name: "User",
   weight: 70,
   height: 175,
   age: 25,
@@ -54,59 +48,39 @@ const INITIAL_PROFILE: UserProfile = {
   proteinGoal: 150,
   waterGoal: 2500,
   goal: 'maintenance',
+  hasAcceptedDisclaimer: false,
 };
-
-const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  { id: 'first_log', title: 'First Bite', description: 'Log your first food item', icon: '🍎', unlocked: false },
-  { id: 'protein_king', title: 'Protein King', description: 'Hit your protein goal', icon: '💪', unlocked: false },
-  { id: 'recipe_master', title: 'Chef de Cuisine', description: 'Create your first recipe', icon: '👨‍🍳', unlocked: false },
-  { id: 'planner_pro', title: 'Planner Pro', description: 'Create a 7-day meal plan', icon: '📅', unlocked: false },
-  { id: 'hydration_hero', title: 'Hydration Hero', description: 'Hit your water goal', icon: '💧', unlocked: false },
-];
 
 export function useNutritionStore() {
   const [profile, setProfile] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('nutrition_profile');
+    const saved = localStorage.getItem('gerd_profile');
     return saved ? JSON.parse(saved) : INITIAL_PROFILE;
   });
 
   const [logs, setLogs] = useState<LogEntry[]>(() => {
-    const saved = localStorage.getItem('nutrition_logs');
+    const saved = localStorage.getItem('gerd_logs');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [symptoms, setSymptoms] = useState<SymptomEntry[]>(() => {
+    const saved = localStorage.getItem('gerd_symptoms');
     return saved ? JSON.parse(saved) : [];
   });
 
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
-    const saved = localStorage.getItem('nutrition_recipes');
+    const saved = localStorage.getItem('gerd_recipes');
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [mealPlans, setMealPlans] = useState<MealPlan[]>(() => {
-    const saved = localStorage.getItem('nutrition_meal_plans');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [wearableData, setWearableData] = useState<WearableData>(() => {
-    const saved = localStorage.getItem('nutrition_wearable');
-    return saved ? JSON.parse(saved) : { steps: 8432, sleepHours: 7.5, isSleeping: false, sleepStartTime: null };
-  });
-
-  const [waterIntake, setWaterIntake] = useState(() => Number(localStorage.getItem('nutrition_water') || 0));
-  const [points, setPoints] = useState(() => Number(localStorage.getItem('nutrition_points') || 0));
-  const [achievements, setAchievements] = useState<Achievement[]>(() => {
-    const saved = localStorage.getItem('nutrition_achievements');
-    return saved ? JSON.parse(saved) : INITIAL_ACHIEVEMENTS;
-  });
+  const [waterIntake, setWaterIntake] = useState(() => Number(localStorage.getItem('gerd_water') || 0));
 
   useEffect(() => {
-    localStorage.setItem('nutrition_profile', JSON.stringify(profile));
-    localStorage.setItem('nutrition_logs', JSON.stringify(logs));
-    localStorage.setItem('nutrition_recipes', JSON.stringify(recipes));
-    localStorage.setItem('nutrition_meal_plans', JSON.stringify(mealPlans));
-    localStorage.setItem('nutrition_wearable', JSON.stringify(wearableData));
-    localStorage.setItem('nutrition_water', waterIntake.toString());
-    localStorage.setItem('nutrition_points', points.toString());
-    localStorage.setItem('nutrition_achievements', JSON.stringify(achievements));
-  }, [profile, logs, recipes, mealPlans, wearableData, waterIntake, points, achievements]);
+    localStorage.setItem('gerd_profile', JSON.stringify(profile));
+    localStorage.setItem('gerd_logs', JSON.stringify(logs));
+    localStorage.setItem('gerd_symptoms', JSON.stringify(symptoms));
+    localStorage.setItem('gerd_recipes', JSON.stringify(recipes));
+    localStorage.setItem('gerd_water', waterIntake.toString());
+  }, [profile, logs, symptoms, recipes, waterIntake]);
 
   const addLog = (food: FoodItem, amount: number) => {
     const newLog: LogEntry = {
@@ -116,115 +90,50 @@ export function useNutritionStore() {
       timestamp: Date.now(),
     };
     setLogs(prev => [...prev, newLog]);
-    addPoints(10);
-    checkAchievements('first_log');
   };
 
-  const toggleSleep = () => {
-    setWearableData(prev => {
-      if (!prev.isSleeping) {
-        return { ...prev, isSleeping: true, sleepStartTime: Date.now() };
-      } else {
-        const durationMs = Date.now() - (prev.sleepStartTime || Date.now());
-        const durationHours = Number((durationMs / (1000 * 60 * 60)).toFixed(1));
-        return { 
-          ...prev, 
-          isSleeping: false, 
-          sleepStartTime: null, 
-          sleepHours: prev.sleepHours + durationHours 
-        };
-      }
-    });
-  };
-
-  const addWater = (amount: number) => {
-    setWaterIntake(prev => {
-      const newVal = prev + amount;
-      if (newVal >= profile.waterGoal) checkAchievements('hydration_hero');
-      return newVal;
-    });
-    addPoints(5);
-  };
-
-  const addRecipe = (name: string, ingredients: { food: FoodItem; amount: number }[]) => {
-    const newRecipe: Recipe = {
+  const addSymptom = (type: SymptomEntry['type'], severity: number, notes?: string) => {
+    const newSymptom: SymptomEntry = {
       id: Math.random().toString(36).substr(2, 9),
-      name,
-      ingredients,
+      type,
+      severity,
+      timestamp: Date.now(),
+      notes,
     };
-    setRecipes(prev => [...prev, newRecipe]);
-    addPoints(50);
-    checkAchievements('recipe_master');
+    setSymptoms(prev => [...prev, newSymptom]);
+    if (severity > 7) confetti({ colors: ['#ef4444'] }); // Alert style confetti
   };
 
-  const addMealPlan = (name: string, days: { [key: string]: Recipe[] }) => {
-    const newPlan: MealPlan = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      days,
-    };
-    setMealPlans(prev => [...prev, newPlan]);
-    addPoints(100);
-    checkAchievements('planner_pro');
-  };
+  const addWater = (amount: number) => setWaterIntake(prev => prev + amount);
 
-  const addPoints = (amount: number) => {
-    setPoints(prev => prev + amount);
-    if (amount >= 50) confetti();
-  };
+  const getSuspectedTriggers = () => {
+    const triggers: Record<string, { count: number; avgSeverity: number }> = {};
+    
+    symptoms.forEach(symptom => {
+      // Look for food logged in the 4 hours before the symptom
+      const windowStart = symptom.timestamp - (4 * 60 * 60 * 1000);
+      const relevantLogs = logs.filter(l => l.timestamp >= windowStart && l.timestamp <= symptom.timestamp);
+      
+      relevantLogs.forEach(log => {
+        const name = log.food.description;
+        if (!triggers[name]) triggers[name] = { count: 0, avgSeverity: 0 };
+        triggers[name].count += 1;
+        triggers[name].avgSeverity = (triggers[name].avgSeverity + symptom.severity) / 2;
+      });
+    });
 
-  const checkAchievements = (id: string) => {
-    setAchievements(prev => prev.map(a => {
-      if (a.id === id && !a.unlocked) {
-        confetti();
-        return { ...a, unlocked: true };
-      }
-      return a;
-    }));
-  };
-
-  const calculateBMI = () => {
-    const heightInMeters = profile.height / 100;
-    if (heightInMeters === 0) return "0.0";
-    return (profile.weight / (heightInMeters * heightInMeters)).toFixed(1);
-  };
-
-  const calculateRecommendedCalories = () => {
-    // Mifflin-St Jeor Equation
-    let bmr = (10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age);
-    if (profile.gender === 'male') bmr += 5;
-    else bmr -= 161;
-
-    const activityFactors = {
-      sedentary: 1.2,
-      light: 1.375,
-      moderate: 1.55,
-      active: 1.725,
-      very_active: 1.9
-    };
-
-    let tdee = bmr * activityFactors[profile.activityLevel];
-
-    if (profile.goal === 'weight_loss') tdee -= 500;
-    if (profile.goal === 'muscle_gain') tdee += 300;
-
-    return Math.round(tdee);
+    return Object.entries(triggers)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
   };
 
   return { 
     profile, setProfile, 
     logs, addLog, 
-    recipes, addRecipe,
-    mealPlans, addMealPlan,
-    wearableData, toggleSleep,
+    symptoms, addSymptom,
+    recipes, setRecipes,
     waterIntake, addWater, setWaterIntake,
-    points, achievements, 
-    addPoints, calculateBMI, calculateRecommendedCalories
+    getSuspectedTriggers
   };
-}
-
-export interface MealPlan {
-  id: string;
-  name: string;
-  days: { [key: string]: Recipe[] };
 }
