@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import MobileNav from '@/components/MobileNav';
@@ -7,7 +9,7 @@ import RecipeBuilder from '@/components/RecipeBuilder';
 import MealPlanner from '@/components/MealPlanner';
 import NutritionHistory from '@/components/NutritionHistory';
 import WaterTracker from '@/components/WaterTracker';
-import SmartCoach from '@/components/SmartCoach';
+import Goals from '@/components/Goals';
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -100,7 +102,7 @@ const Index = () => {
               </div>
               <div className="space-y-6">
                 <WaterTracker />
-                <SmartCoach />
+                <Goals />
               </div>
             </div>
           </div>
