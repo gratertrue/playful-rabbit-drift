@@ -46,7 +46,7 @@ const FoodSearch = () => {
     if (!searchQuery.trim()) return;
     setLoading(true);
     try {
-      constdata = await searchFoods(searchQuery, 15);
+      const data = await searchFoods(searchQuery, 15);
       setResults(data);
       setFilteredResults(data);
     } catch (err) {
