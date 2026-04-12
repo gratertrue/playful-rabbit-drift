@@ -6,6 +6,7 @@ import { useNutritionStore } from '@/hooks/use-nutrition-store';
 import { searchFoods, FoodItem, getNutrientValue } from '@/lib/usda-api';
 import { Search, Plus, Trash2, Save, ChefHat } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { Label } from '@/components/ui/label';
 
 const RecipeBuilder = () => {
   const [recipeName, setRecipeName] = useState('');
@@ -16,8 +17,19 @@ const RecipeBuilder = () => {
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-    const results = await searchFoods(searchQuery);
-    setSearchResults(results);
+    
+    const apiKey = localStorage.getItem('usda_api_key') || '';
+    if (!apiKey) {
+      showError("Please set your USDA API Key in the Food Lookup tab first.");
+      return;
+    }
+
+    try {
+      const results = await searchFoods(searchQuery, apiKey);
+      setSearchResults(results);
+    } catch (error: any) {
+      showError(error.message || "Failed to search ingredients");
+    }
   };
 
   const addIngredient = (food: FoodItem) => {
@@ -172,7 +184,5 @@ const RecipeBuilder = () => {
     </div>
   );
 };
-
-import { Label } from '@/components/ui/label';
 
 export default RecipeBuilder;
