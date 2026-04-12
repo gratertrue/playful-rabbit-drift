@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { searchFoods, FoodItem, getNutrientValue, calculateSmartScore } from '@/lib/usda-api';
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
-import { Search, Plus, Loader2, ChevronRight, Globe, AlertCircle, X } from 'lucide-react';
+import { Search, Plus, Loader2, ChevronRight, Globe, AlertCircle, X, ListFilter } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from '@/utils/toast';
 import {
@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import HealthAnalyzer from './HealthAnalyzer';
 import { cn } from '@/lib/utils';
 
@@ -130,57 +131,82 @@ const FoodSearch = () => {
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedFood} onOpenChange={(open) => !open && setSelectedFood(null)}>
-        <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-2xl">
+        <DialogContent className="bg-slate-950 border-slate-800 text-white max-w-3xl max-h-[90vh] flex flex-col">
           {selectedFood && (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-2 text-cyan-400 mb-1">
                   <Globe className="h-4 w-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Detail Nutrisi Terjemahan</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Detail Nutrisi Lengkap</span>
                 </div>
                 <DialogTitle className="text-2xl font-bold">{selectedFood.description}</DialogTitle>
                 <p className="text-slate-500 text-xs italic">Asli: {selectedFood.descriptionEn}</p>
               </DialogHeader>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 text-center">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Kalori</p>
-                      <p className="text-2xl font-black text-white">
-                        {Math.round(getNutrientValue(selectedFood.foodNutrients, "Energy") * (amount / 100))}
-                      </p>
+              <div className="flex-1 overflow-hidden py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+                  {/* Left Column: Portions & Analysis */}
+                  <div className="space-y-6">
+                    <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
+                      <label className="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Porsi (Gram)</label>
+                      <Input 
+                        type="number" 
+                        value={amount}
+                        onChange={(e) => setAmount(Number(e.target.value))}
+                        className="bg-slate-950 border-slate-800 text-white text-center text-xl font-bold"
+                      />
                     </div>
-                    <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 text-center">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Protein</p>
-                      <p className="text-2xl font-black text-blue-400">
-                        {(getNutrientValue(selectedFood.foodNutrients, "Protein") * (amount / 100)).toFixed(1)}g
-                      </p>
-                    </div>
-                  </div>
-                  <HealthAnalyzer food={selectedFood} />
-                </div>
 
-                <div className="space-y-4">
-                  <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
-                    <label className="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Porsi (Gram)</label>
-                    <Input 
-                      type="number" 
-                      value={amount}
-                      onChange={(e) => setAmount(Number(e.target.value))}
-                      className="bg-slate-950 border-slate-800 text-white text-center text-xl font-bold"
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 text-center">
+                        <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Kalori</p>
+                        <p className="text-2xl font-black text-white">
+                          {Math.round(getNutrientValue(selectedFood.foodNutrients, "Energy") * (amount / 100))}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 text-center">
+                        <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Protein</p>
+                        <p className="text-2xl font-black text-blue-400">
+                          {(getNutrientValue(selectedFood.foodNutrients, "Protein") * (amount / 100)).toFixed(1)}g
+                        </p>
+                      </div>
+                    </div>
+
+                    <HealthAnalyzer food={selectedFood} />
+
+                    <div className="flex items-start gap-2 p-3 bg-yellow-500/5 border border-yellow-500/10 rounded-xl">
+                      <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-slate-400">
+                        Data gizi berasal dari database USDA. Nilai dihitung berdasarkan porsi {amount}g.
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-2 p-3 bg-yellow-500/5 border border-yellow-500/10 rounded-xl">
-                    <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-slate-400">
-                      Data gizi berasal dari database USDA. Terjemahan dilakukan secara otomatis.
-                    </p>
+
+                  {/* Right Column: Full Nutrient List */}
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ListFilter className="h-4 w-4 text-cyan-400" />
+                      <span className="text-xs font-bold text-slate-400 uppercase">Daftar Nutrisi Lengkap</span>
+                    </div>
+                    <ScrollArea className="flex-1 bg-slate-900/30 rounded-2xl border border-slate-800 p-4">
+                      <div className="space-y-3">
+                        {selectedFood.foodNutrients
+                          .filter(n => n.value > 0) // Hanya tampilkan yang nilainya > 0
+                          .map((nutrient, idx) => (
+                            <div key={idx} className="flex justify-between items-center py-2 border-b border-slate-800/50 last:border-0">
+                              <span className="text-xs text-slate-400">{nutrient.nutrientName}</span>
+                              <span className="text-xs font-bold text-white">
+                                {(nutrient.value * (amount / 100)).toFixed(2)} {nutrient.unitName}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </ScrollArea>
                   </div>
                 </div>
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="pt-4">
                 <Button 
                   onClick={() => handleAdd(selectedFood, amount)}
                   className="w-full bg-cyan-600 hover:bg-cyan-700 h-12 text-lg font-bold"
