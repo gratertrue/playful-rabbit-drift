@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { searchFoods, FoodItem, getNutrientValue, calculateSmartScore } from '@/lib/usda-api';
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
-import { Search, Loader2, ChevronRight, Globe, AlertCircle, X, ListFilter } from 'lucide-react';
+import { Search, Loader2, ChevronRight, Globe, AlertCircle, X, ListFilter, Plus } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from '@/utils/toast';
 import {
@@ -28,7 +29,6 @@ const FoodSearch = () => {
   const { addLog } = useNutritionStore();
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Fungsi pencarian cerdas manual (pengganti fuse.js)
   const smartSort = (items: FoodItem[], searchTerm: string) => {
     const q = searchTerm.toLowerCase();
     return items.map(item => {
@@ -36,15 +36,14 @@ const FoodSearch = () => {
       const desc = item.description.toLowerCase();
       const descEn = item.descriptionEn.toLowerCase();
       
-      // Skor berdasarkan kecocokan
-      if (desc === q || descEn === q) score += 100; // Cocok persis
-      else if (desc.startsWith(q) || descEn.startsWith(q)) score += 50; // Dimulai dengan
-      else if (desc.includes(q) || descEn.includes(q)) score += 10; // Mengandung kata
+      if (desc === q || descEn === q) score += 100;
+      else if (desc.startsWith(q) || descEn.startsWith(q)) score += 50;
+      else if (desc.includes(q) || descEn.includes(q)) score += 10;
       
       return { item, score };
     })
-    .filter(res => res.score > 0 || searchTerm === "") // Filter yang tidak cocok
-    .sort((a, b) => b.score - a.score) // Urutkan berdasarkan skor tertinggi
+    .filter(res => res.score > 0 || searchTerm === "")
+    .sort((a, b) => b.score - a.score)
     .map(res => res.item);
   };
 
@@ -76,7 +75,6 @@ const FoodSearch = () => {
     setLoading(true);
     try {
       const data = await searchFoods(searchQuery, 10);
-      // Gunakan fungsi smartSort manual
       const sortedResults = smartSort(data, searchQuery);
       setResults(sortedResults.length > 0 ? sortedResults : data);
       setActiveIndex(-1);
