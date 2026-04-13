@@ -227,16 +227,20 @@ export function useNutritionStore() {
   };
 
   const calculateRecommendedCalories = () => {
-    let bmr = (10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age);
-    if (profile.gender === 'male') bmr += 5;
-    else bmr -= 161;
+    // Harris-Benedict Revised Formula
+    let bmr = 0;
+    if (profile.gender === 'male') {
+      bmr = 88.362 + (13.397 * profile.weight) + (4.799 * profile.height) - (5.677 * profile.age);
+    } else {
+      bmr = 447.593 + (9.247 * profile.weight) + (3.098 * profile.height) - (4.330 * profile.age);
+    }
 
     const activityFactors = {
-      sedentary: 1.2,
-      light: 1.375,
-      moderate: 1.55,
-      active: 1.725,
-      very_active: 1.9
+      sedentary: 1.2, // Ringan
+      light: 1.4,     // Cukup Aktif
+      moderate: 1.6,  // Aktif
+      active: 1.8,    // Sangat Aktif
+      very_active: 2.0
     };
 
     let tdee = bmr * activityFactors[profile.activityLevel];
@@ -247,6 +251,20 @@ export function useNutritionStore() {
     return Math.round(tdee);
   };
 
+  const getAKGGoals = () => {
+    const isMale = profile.gender === 'male';
+    const age = profile.age;
+
+    // Simplified AKG Indonesia (Permenkes 28/2019)
+    return {
+      vitaminC: isMale ? 90 : 75,
+      iron: isMale ? (age < 18 ? 15 : 9) : (age < 50 ? 18 : 8),
+      calcium: age < 18 ? 1200 : 1000,
+      vitaminA: isMale ? 650 : 600,
+      zinc: isMale ? 11 : 8
+    };
+  };
+
   return { 
     profile, setProfile, 
     logs, addLog, 
@@ -255,7 +273,8 @@ export function useNutritionStore() {
     wearableData, toggleSleep, resetSleep,
     waterIntake, addWater, setWaterIntake,
     points, achievements, 
-    addPoints, calculateBMI, calculateRecommendedCalories
+    addPoints, calculateBMI, calculateRecommendedCalories,
+    getAKGGoals
   };
 }
 

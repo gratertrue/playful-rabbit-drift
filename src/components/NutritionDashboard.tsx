@@ -7,6 +7,7 @@ import { Flame, Target, Trophy, Zap, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import SmartSuggestions from './SmartSuggestions';
 import GrowthImpactInfo from './GrowthImpactInfo';
+import SmartNutritionAnalyzer from './SmartNutritionAnalyzer';
 import { cn } from '@/lib/utils';
 
 const NutritionDashboard = () => {
@@ -137,6 +138,8 @@ const NutritionDashboard = () => {
               </div>
             </CardContent>
           </Card>
+
+          <SmartNutritionAnalyzer />
 
           <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
             <CardHeader>
