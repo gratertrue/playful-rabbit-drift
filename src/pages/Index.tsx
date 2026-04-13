@@ -32,6 +32,14 @@ const Index = () => {
     showSuccess(`Target kalori diperbarui menjadi ${recommended} kkal berdasarkan profil Anda!`);
   };
 
+  // Fungsi pembantu untuk memformat desimal jam ke Jam & Menit
+  const formatTime = (hoursDecimal: number) => {
+    const totalMinutes = Math.round(hoursDecimal * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return `${h}j ${m}m`;
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':

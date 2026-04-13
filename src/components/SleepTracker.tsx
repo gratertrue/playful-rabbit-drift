@@ -7,28 +7,35 @@ import { cn } from '@/lib/utils';
 
 const SleepTracker = () => {
   const { wearableData, toggleSleep, resetSleep } = useNutritionStore();
-  const [currentDuration, setCurrentDuration] = useState("0.0");
+  const [currentHours, setCurrentHours] = useState(0);
 
-  // Update durasi secara real-time jika sedang tidur
+  // Fungsi pembantu untuk memformat desimal jam ke Jam & Menit
+  const formatTime = (hoursDecimal: number) => {
+    const totalMinutes = Math.round(hoursDecimal * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return { h, m };
+  };
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
     if (wearableData.isSleeping && wearableData.sleepStartTime) {
-      interval = setInterval(() => {
+      const update = () => {
         const diffMs = Date.now() - wearableData.sleepStartTime!;
-        const diffHours = (diffMs / (1000 * 60 * 60)).toFixed(1);
-        setCurrentDuration(diffHours);
-      }, 60000); // Update setiap menit
+        setCurrentHours(diffMs / (1000 * 60 * 60));
+      };
       
-      // Set awal
-      const diffMs = Date.now() - wearableData.sleepStartTime!;
-      setCurrentDuration((diffMs / (1000 * 60 * 60)).toFixed(1));
+      interval = setInterval(update, 10000); // Update setiap 10 detik
+      update();
     } else {
-      setCurrentDuration("0.0");
+      setCurrentHours(0);
     }
 
     return () => clearInterval(interval);
   }, [wearableData.isSleeping, wearableData.sleepStartTime]);
+
+  const displayTime = wearableData.isSleeping ? formatTime(currentHours) : formatTime(wearableData.sleepHours);
 
   return (
     <Card className={cn(
@@ -72,10 +79,12 @@ const SleepTracker = () => {
               <Clock className="h-3 w-3" />
               <span className="text-[10px] uppercase font-medium">Total Durasi</span>
             </div>
-            <p className="text-3xl font-black text-white">
-              {wearableData.isSleeping ? currentDuration : wearableData.sleepHours}
-              <span className="text-sm font-normal text-slate-500 ml-1">jam</span>
-            </p>
+            <div className="flex items-baseline gap-1">
+              <p className="text-3xl font-black text-white">{displayTime.h}</p>
+              <span className="text-sm font-bold text-slate-500 mr-1">j</span>
+              <p className="text-3xl font-black text-white">{displayTime.m}</p>
+              <span className="text-sm font-bold text-slate-500">m</span>
+            </div>
           </div>
 
           <Button 
@@ -96,7 +105,7 @@ const SleepTracker = () => {
 
         {wearableData.isSleeping && (
           <p className="text-[9px] text-purple-400 mt-3 text-center font-medium animate-pulse">
-            Aplikasi dapat ditutup. Waktu tetap berjalan di latar belakang.
+            Waktu tetap berjalan di latar belakang.
           </p>
         )}
       </CardContent>
