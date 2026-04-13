@@ -11,6 +11,7 @@ export interface UserProfile {
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   calorieGoal: number;
   proteinGoal: number;
+  carbsGoal: number;
   waterGoal: number;
   goal: 'weight_loss' | 'muscle_gain' | 'maintenance';
 }
@@ -60,6 +61,7 @@ const INITIAL_PROFILE: UserProfile = {
   activityLevel: 'moderate',
   calorieGoal: 2000,
   proteinGoal: 150,
+  carbsGoal: 250,
   waterGoal: 2500,
   goal: 'maintenance',
 };

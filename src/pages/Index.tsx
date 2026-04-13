@@ -225,17 +225,30 @@ const Index = () => {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-slate-400">Target Kalori</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        type="number"
-                        value={profile.calorieGoal} 
-                        onChange={e => setProfile({...profile, calorieGoal: Number(e.target.value)})}
-                        className="bg-slate-800 border-slate-700 text-white"
-                      />
-                      <Button onClick={handleAutoCalorie} variant="secondary" size="icon" title="Hitung otomatis">
-                        <Calculator className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Input 
+                      type="number"
+                      value={profile.calorieGoal} 
+                      onChange={e => setProfile({...profile, calorieGoal: Number(e.target.value)})}
+                      className="bg-slate-800 border-slate-700 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-400">Target Protein (g)</Label>
+                    <Input 
+                      type="number"
+                      value={profile.proteinGoal} 
+                      onChange={e => setProfile({...profile, proteinGoal: Number(e.target.value)})}
+                      className="bg-slate-800 border-slate-700 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-400">Target Karbohidrat (g)</Label>
+                    <Input 
+                      type="number"
+                      value={profile.carbsGoal} 
+                      onChange={e => setProfile({...profile, carbsGoal: Number(e.target.value)})}
+                      className="bg-slate-800 border-slate-700 text-white"
+                    />
                   </div>
                 </div>
                 <Button onClick={() => showSuccess("Profil diperbarui!")} className="w-full bg-cyan-600 hover:bg-cyan-700">Simpan Perubahan</Button>
