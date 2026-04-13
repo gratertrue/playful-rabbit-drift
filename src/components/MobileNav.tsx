@@ -9,11 +9,11 @@ interface MobileNavProps {
 
 const MobileNav = ({ activeTab, setActiveTab }: MobileNavProps) => {
   const items = [
-    { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-    { id: 'search', label: 'Search', icon: Search },
-    { id: 'recipes', label: 'Recipes', icon: Utensils },
-    { id: 'planner', label: 'Plan', icon: Calendar },
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'dashboard', label: 'Beranda', icon: LayoutDashboard },
+    { id: 'search', label: 'Cari', icon: Search },
+    { id: 'recipes', label: 'Resep', icon: Utensils },
+    { id: 'planner', label: 'Rencana', icon: Calendar },
+    { id: 'profile', label: 'Profil', icon: User },
   ];
 
   return (

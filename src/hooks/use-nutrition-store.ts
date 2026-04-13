@@ -44,7 +44,7 @@ export interface WearableData {
 }
 
 const INITIAL_PROFILE: UserProfile = {
-  name: "Explorer",
+  name: "Penjelajah",
   weight: 70,
   height: 175,
   age: 25,
@@ -57,11 +57,11 @@ const INITIAL_PROFILE: UserProfile = {
 };
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  { id: 'first_log', title: 'First Bite', description: 'Log your first food item', icon: '🍎', unlocked: false },
-  { id: 'protein_king', title: 'Protein King', description: 'Hit your protein goal', icon: '💪', unlocked: false },
-  { id: 'recipe_master', title: 'Chef de Cuisine', description: 'Create your first recipe', icon: '👨‍🍳', unlocked: false },
-  { id: 'planner_pro', title: 'Planner Pro', description: 'Create a 7-day meal plan', icon: '📅', unlocked: false },
-  { id: 'hydration_hero', title: 'Hydration Hero', description: 'Hit your water goal', icon: '💧', unlocked: false },
+  { id: 'first_log', title: 'Gigitan Pertama', description: 'Catat makanan pertama Anda', icon: '🍎', unlocked: false },
+  { id: 'protein_king', title: 'Raja Protein', description: 'Capai target protein harian', icon: '💪', unlocked: false },
+  { id: 'recipe_master', title: 'Master Resep', description: 'Buat resep pertama Anda', icon: '👨‍🍳', unlocked: false },
+  { id: 'planner_pro', title: 'Perencana Pro', description: 'Buat rencana makan 7 hari', icon: '📅', unlocked: false },
+  { id: 'hydration_hero', title: 'Pahlawan Hidrasi', description: 'Capai target minum air', icon: '💧', unlocked: false },
 ];
 
 export function useNutritionStore() {
@@ -190,7 +190,6 @@ export function useNutritionStore() {
   };
 
   const calculateRecommendedCalories = () => {
-    // Mifflin-St Jeor Equation
     let bmr = (10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age);
     if (profile.gender === 'male') bmr += 5;
     else bmr -= 161;

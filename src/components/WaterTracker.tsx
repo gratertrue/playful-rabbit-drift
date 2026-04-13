@@ -23,7 +23,7 @@ const WaterTracker = () => {
         <CardTitle className="text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Droplets className="h-5 w-5 text-cyan-400" />
-            Hydration
+            Hidrasi
           </div>
           <Button 
             variant="ghost" 
@@ -64,7 +64,7 @@ const WaterTracker = () => {
         </div>
 
         <p className="text-[10px] text-center text-slate-500 italic">
-          Tip: Drink a glass of water before every meal to aid digestion.
+          Tips: Minumlah segelas air sebelum makan untuk membantu pencernaan.
         </p>
       </CardContent>
     </Card>

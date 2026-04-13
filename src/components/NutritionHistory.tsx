@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 const NutritionHistory = () => {
   const { logs } = useNutritionStore();
 
-  // Group logs by day for the last 7 days
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -34,7 +33,7 @@ const NutritionHistory = () => {
     }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
     return {
-      name: date.toLocaleDateString('en-US', { weekday: 'short' }),
+      name: date.toLocaleDateString('id-ID', { weekday: 'short' }),
       calories: Math.round(totals.calories),
       protein: Math.round(totals.protein),
       carbs: Math.round(totals.carbs),
@@ -46,7 +45,7 @@ const NutritionHistory = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "nutrition_history.json");
+    downloadAnchorNode.setAttribute("download", "riwayat_nutrisi.json");
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -57,11 +56,11 @@ const NutritionHistory = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-white flex items-center gap-2">
           <History className="h-6 w-6 text-cyan-400" />
-          Nutrition History
+          Riwayat Nutrisi
         </h2>
         <Button onClick={exportData} variant="outline" className="border-slate-700 text-slate-400 hover:text-white">
           <Download className="h-4 w-4 mr-2" />
-          Export JSON
+          Ekspor JSON
         </Button>
       </div>
 
@@ -70,7 +69,7 @@ const NutritionHistory = () => {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-cyan-400" />
-              Calorie Intake (7 Days)
+              Asupan Kalori (7 Hari)
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
@@ -93,7 +92,7 @@ const NutritionHistory = () => {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-blue-400" />
-              Macro Trends (7 Days)
+              Tren Makro (7 Hari)
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
