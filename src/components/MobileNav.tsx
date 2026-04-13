@@ -23,7 +23,7 @@ const MobileNav = ({ activeTab, setActiveTab }: MobileNavProps) => {
           key={item.id}
           onClick={() => setActiveTab(item.id)}
           className={cn(
-            "flex flex-col items-center gap-1 transition-colors",
+            "flex flex-col items-center gap-1 transition-colors p-2",
             activeTab === item.id ? "text-cyan-400" : "text-slate-500"
           )}
         >
