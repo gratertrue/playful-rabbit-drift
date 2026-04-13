@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
 import { getNutrientValue } from '@/lib/usda-api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
-import { History, Download, TrendingUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { History, TrendingUp } from 'lucide-react';
 
 const NutritionHistory = () => {
   const { logs } = useNutritionStore();
@@ -41,16 +40,6 @@ const NutritionHistory = () => {
     };
   });
 
-  const exportData = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "riwayat_nutrisi.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -58,10 +47,6 @@ const NutritionHistory = () => {
           <History className="h-6 w-6 text-cyan-400" />
           Riwayat Nutrisi
         </h2>
-        <Button onClick={exportData} variant="outline" className="border-slate-700 text-slate-400 hover:text-white">
-          <Download className="h-4 w-4 mr-2" />
-          Ekspor JSON
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
