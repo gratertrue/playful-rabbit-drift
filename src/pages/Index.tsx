@@ -9,6 +9,7 @@ import RecipeBuilder from '@/components/RecipeBuilder';
 import MealPlanner from '@/components/MealPlanner';
 import NutritionHistory from '@/components/NutritionHistory';
 import WaterTracker from '@/components/WaterTracker';
+import SleepTracker from '@/components/SleepTracker';
 import Goals from '@/components/Goals';
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,13 +18,13 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { showSuccess } from '@/utils/toast';
-import { Scale, User as UserIcon, Activity, Zap, Moon, Footprints, Play, Square, Utensils, Calendar, Calculator } from 'lucide-react';
+import { Scale, User as UserIcon, Activity, Zap, Footprints, Utensils, Calendar, Calculator } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { profile, setProfile, achievements, calculateBMI, wearableData, toggleSleep, calculateRecommendedCalories } = useNutritionStore();
+  const { profile, setProfile, achievements, calculateBMI, wearableData, calculateRecommendedCalories } = useNutritionStore();
 
   const handleAutoCalorie = () => {
     const recommended = calculateRecommendedCalories();
@@ -48,39 +49,9 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className={cn(
-                "bg-slate-900/50 border-slate-800 backdrop-blur-xl transition-all duration-500",
-                wearableData.isSleeping && "border-purple-500/50 bg-purple-500/5"
-              )}>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "p-3 rounded-xl transition-colors",
-                      wearableData.isSleeping ? "bg-purple-500/20" : "bg-purple-500/10"
-                    )}>
-                      <Moon className={cn("h-6 w-6", wearableData.isSleeping ? "text-purple-300 animate-pulse" : "text-purple-400")} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 uppercase">Pelacak Tidur</p>
-                      <p className="text-xl font-bold text-white">
-                        {wearableData.isSleeping ? "Melacak..." : `${wearableData.sleepHours}j Total`}
-                      </p>
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={toggleSleep}
-                    variant={wearableData.isSleeping ? "destructive" : "secondary"}
-                    size="sm"
-                    className="gap-2"
-                  >
-                    {wearableData.isSleeping ? (
-                      <><Square className="h-3 w-3" /> Bangun</>
-                    ) : (
-                      <><Play className="h-3 w-3" /> Mulai Tidur</>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
+              
+              <SleepTracker />
+
               <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
                 <CardContent className="p-4 flex items-center justify-around h-full">
                   <Button variant="ghost" onClick={() => setActiveTab('recipes')} className="flex flex-col gap-1 h-auto py-2 text-slate-400 hover:text-cyan-400">

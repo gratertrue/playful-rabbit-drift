@@ -87,7 +87,7 @@ export function useNutritionStore() {
 
   const [wearableData, setWearableData] = useState<WearableData>(() => {
     const saved = localStorage.getItem('nutrition_wearable');
-    return saved ? JSON.parse(saved) : { steps: 8432, sleepHours: 7.5, isSleeping: false, sleepStartTime: null };
+    return saved ? JSON.parse(saved) : { steps: 8432, sleepHours: 0, isSleeping: false, sleepStartTime: null };
   });
 
   const [waterIntake, setWaterIntake] = useState(() => Number(localStorage.getItem('nutrition_water') || 0));
@@ -123,18 +123,29 @@ export function useNutritionStore() {
   const toggleSleep = () => {
     setWearableData(prev => {
       if (!prev.isSleeping) {
+        // Mulai tidur: simpan waktu sekarang
         return { ...prev, isSleeping: true, sleepStartTime: Date.now() };
       } else {
+        // Bangun: hitung selisih waktu dari start sampai sekarang
         const durationMs = Date.now() - (prev.sleepStartTime || Date.now());
         const durationHours = Number((durationMs / (1000 * 60 * 60)).toFixed(1));
         return { 
           ...prev, 
           isSleeping: false, 
           sleepStartTime: null, 
-          sleepHours: prev.sleepHours + durationHours 
+          sleepHours: Number((prev.sleepHours + durationHours).toFixed(1))
         };
       }
     });
+  };
+
+  const resetSleep = () => {
+    setWearableData(prev => ({
+      ...prev,
+      isSleeping: false,
+      sleepStartTime: null,
+      sleepHours: 0
+    }));
   };
 
   const addWater = (amount: number) => {
@@ -215,7 +226,7 @@ export function useNutritionStore() {
     logs, addLog, 
     recipes, addRecipe,
     mealPlans, addMealPlan,
-    wearableData, toggleSleep,
+    wearableData, toggleSleep, resetSleep,
     waterIntake, addWater, setWaterIntake,
     points, achievements, 
     addPoints, calculateBMI, calculateRecommendedCalories
