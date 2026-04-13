@@ -18,13 +18,13 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { showSuccess } from '@/utils/toast';
-import { Scale, User as UserIcon, Activity, Zap, Footprints, Utensils, Calendar, Calculator } from 'lucide-react';
+import { Scale, User as UserIcon, Activity, Zap, Utensils, Calendar, Calculator } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { profile, setProfile, achievements, calculateBMI, wearableData, calculateRecommendedCalories } = useNutritionStore();
+  const { profile, setProfile, achievements, calculateBMI, calculateRecommendedCalories } = useNutritionStore();
 
   const handleAutoCalorie = () => {
     const recommended = calculateRecommendedCalories();
@@ -32,32 +32,12 @@ const Index = () => {
     showSuccess(`Target kalori diperbarui menjadi ${recommended} kkal berdasarkan profil Anda!`);
   };
 
-  // Fungsi pembantu untuk memformat desimal jam ke Jam & Menit
-  const formatTime = (hoursDecimal: number) => {
-    const totalMinutes = Math.round(hoursDecimal * 60);
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    return `${h}j ${m}m`;
-  };
-
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="p-3 bg-cyan-500/10 rounded-xl">
-                    <Footprints className="h-6 w-6 text-cyan-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase">Langkah Hari Ini</p>
-                    <p className="text-xl font-bold text-white">{wearableData.steps.toLocaleString()}</p>
-                  </div>
-                </CardContent>
-              </Card>
-              
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <SleepTracker />
 
               <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
