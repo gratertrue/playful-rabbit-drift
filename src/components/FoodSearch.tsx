@@ -31,20 +31,21 @@ const FoodSearch = () => {
 
   const smartSort = (items: FoodItem[], searchTerm: string) => {
     const q = searchTerm.toLowerCase();
-    return items.map(item => {
-      let score = 0;
-      const desc = item.description.toLowerCase();
-      const descEn = item.descriptionEn.toLowerCase();
-      
-      if (desc === q || descEn === q) score += 100;
-      else if (desc.startsWith(q) || descEn.startsWith(q)) score += 50;
-      else if (desc.includes(q) || descEn.includes(q)) score += 10;
-      
-      return { item, score };
-    })
-    .filter(res => res.score > 0 || searchTerm === "")
-    .sort((a, b) => b.score - a.score)
-    .map(res => res.item);
+    return [...items].sort((a, b) => {
+      const aDesc = a.description.toLowerCase();
+      const aDescEn = a.descriptionEn.toLowerCase();
+      const bDesc = b.description.toLowerCase();
+      const bDescEn = b.descriptionEn.toLowerCase();
+
+      const getScore = (desc: string, en: string) => {
+        if (desc === q || en === q) return 100;
+        if (desc.startsWith(q) || en.startsWith(q)) return 50;
+        if (desc.includes(q) || en.includes(q)) return 10;
+        return 0;
+      };
+
+      return getScore(bDesc, bDescEn) - getScore(aDesc, aDescEn);
+    });
   };
 
   const highlightText = (text: string, highlight: string) => {
@@ -74,9 +75,10 @@ const FoodSearch = () => {
 
     setLoading(true);
     try {
-      const data = await searchFoods(searchQuery, 10);
+      // Meningkatkan pageSize menjadi 30 untuk menampilkan lebih banyak hasil yang sesuai
+      const data = await searchFoods(searchQuery, 30);
       const sortedResults = smartSort(data, searchQuery);
-      setResults(sortedResults.length > 0 ? sortedResults : data);
+      setResults(sortedResults);
       setActiveIndex(-1);
     } catch (err: any) {
       if (err.name !== 'AbortError') {
