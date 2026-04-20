@@ -16,9 +16,11 @@ import {
   Moon, 
   ChevronRight, 
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const steps = [
   {
@@ -27,6 +29,13 @@ const steps = [
     icon: Sparkles,
     color: "text-yellow-400",
     bg: "bg-yellow-400/10"
+  },
+  {
+    title: "Personalisasi Profil",
+    description: "Lengkapi data berat badan, tinggi, dan target kesehatan Anda di menu Profil untuk mendapatkan rekomendasi nutrisi yang akurat dan personal.",
+    icon: User,
+    color: "text-pink-400",
+    bg: "bg-pink-400/10"
   },
   {
     title: "Cari & Catat Makanan",
@@ -58,7 +67,11 @@ const steps = [
   }
 ];
 
-const OnboardingGuide = () => {
+interface OnboardingGuideProps {
+  onComplete?: () => void;
+}
+
+const OnboardingGuide = ({ onComplete }: OnboardingGuideProps) => {
   const [open, setOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -80,6 +93,7 @@ const OnboardingGuide = () => {
   const handleClose = () => {
     localStorage.setItem('nutri_intel_onboarding_seen', 'true');
     setOpen(false);
+    if (onComplete) onComplete();
   };
 
   const StepIcon = steps[currentStep].icon;
@@ -126,7 +140,7 @@ const OnboardingGuide = () => {
             className="w-full bg-cyan-600 hover:bg-cyan-700 h-12 font-bold rounded-xl group"
           >
             {currentStep === steps.length - 1 ? (
-              <>Mulai Sekarang <CheckCircle2 className="ml-2 h-4 w-4" /></>
+              <>Lengkapi Profil <CheckCircle2 className="ml-2 h-4 w-4" /></>
             ) : (
               <>Lanjut <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" /></>
             )}
@@ -137,5 +151,4 @@ const OnboardingGuide = () => {
   );
 };
 
-import { cn } from '@/lib/utils';
 export default OnboardingGuide;

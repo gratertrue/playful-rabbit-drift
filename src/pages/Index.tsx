@@ -282,7 +282,7 @@ const Index = () => {
 
   return (
     <div className="flex min-h-screen bg-[#0F172A] text-slate-200 font-sans selection:bg-cyan-500/30">
-      <OnboardingGuide />
+      <OnboardingGuide onComplete={() => setActiveTab('profile')} />
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8">
