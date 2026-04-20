@@ -6,16 +6,19 @@ import { Button } from '@/components/ui/button';
 
 const SUGGESTIONS = {
   weight_loss: [
-    { name: 'Salmon Panggang', cals: 350, icon: Beef },
-    { name: 'Salad Quinoa', cals: 280, icon: Wheat },
+    { name: 'Salmon Panggang dengan Asparagus', cals: 350, protein: 35, icon: Beef },
+    { name: 'Salad Quinoa & Kacang Arab', cals: 280, protein: 12, icon: Wheat },
+    { name: 'Yogurt Yunani dengan Beri', cals: 180, protein: 18, icon: Apple },
   ],
   muscle_gain: [
-    { name: 'Steak & Ubi', cals: 650, icon: Beef },
-    { name: 'Ayam & Nasi', cals: 550, icon: Beef },
+    { name: 'Steak & Ubi Jalar', cals: 650, protein: 45, icon: Beef },
+    { name: 'Bowl Ayam & Nasi Merah', cals: 550, protein: 40, icon: Beef },
+    { name: 'Oatmeal Protein dengan Selai Kacang', cals: 250, protein: 25, icon: Wheat },
   ],
   maintenance: [
-    { name: 'Wrap Alpukat', cals: 420, icon: Beef },
-    { name: 'Pasta Medit', cals: 480, icon: Wheat },
+    { name: 'Wrap Kalkun Alpukat', cals: 420, protein: 28, icon: Beef },
+    { name: 'Pasta Mediterania', cals: 480, protein: 15, icon: Wheat },
+    { name: 'Piring Kacang Campur & Buah', cals: 320, protein: 8, icon: Apple },
   ]
 };
 
@@ -24,25 +27,36 @@ const SmartSuggestions = () => {
   const currentGoal = profile?.goal || 'maintenance';
   const suggestions = SUGGESTIONS[currentGoal as keyof typeof SUGGESTIONS] || SUGGESTIONS.maintenance;
 
+  const goalLabels: Record<string, string> = {
+    weight_loss: 'penurunan berat badan',
+    muscle_gain: 'pembentukan otot',
+    maintenance: 'pemeliharaan'
+  };
+
   return (
-    <Card className="bg-slate-900/50 border-slate-800">
-      <CardHeader className="p-2 pb-1">
-        <CardTitle className="text-white flex items-center gap-1.5 text-[9px] uppercase">
-          <Sparkles className="h-3 w-3 text-yellow-400" />
+    <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
+      <CardHeader>
+        <CardTitle className="text-white flex items-center gap-2 text-lg">
+          <Sparkles className="h-5 w-5 text-yellow-400" />
           Saran Cerdas
         </CardTitle>
+        <p className="text-xs text-slate-500">Berdasarkan target {goalLabels[currentGoal]} Anda</p>
       </CardHeader>
-      <CardContent className="p-2 pt-0 space-y-1">
+      <CardContent className="space-y-3">
         {suggestions.map((item, idx) => (
-          <div key={idx} className="flex items-center justify-between p-1.5 rounded bg-slate-800/30 border border-slate-800/50 group">
-            <div className="flex items-center gap-2 min-w-0">
-              <item.icon className="h-3 w-3 text-cyan-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[9px] font-medium text-white truncate">{item.name}</p>
-                <p className="text-[7px] text-slate-500">{item.cals} kkal</p>
+          <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-700/50 group hover:border-cyan-500/30 transition-all">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-slate-900 rounded-lg">
+                <item.icon className="h-4 w-4 text-cyan-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">{item.name}</p>
+                <p className="text-[10px] text-slate-500">{item.cals} kkal • {item.protein}g Protein</p>
               </div>
             </div>
-            <ArrowRight className="h-2.5 w-2.5 text-slate-600 group-hover:text-cyan-400" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 group-hover:text-cyan-400">
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         ))}
       </CardContent>
