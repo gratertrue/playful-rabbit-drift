@@ -1,11 +1,9 @@
 /**
  * USDA & Translation API Utility
- * PENTING: Kunci API publik sering dinonaktifkan. 
- * Dapatkan kunci gratis Anda di: https://api.data.gov/signup/
  */
 
-// Ganti string di bawah ini dengan kunci API Anda yang baru
-const USDA_API_KEY = "DEMO_KEY"; 
+// Menggunakan kunci API baru yang diberikan pengguna
+const USDA_API_KEY = "lPjMa22MuuIYtCILxkHRdEHse3eM7uqH5sHEbSKR"; 
 const BASE_URL = "https://api.nal.usda.gov/fdc/v1";
 
 export interface Nutrient {
@@ -59,7 +57,7 @@ export async function searchFoods(query: string, pageSize: number = 15): Promise
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       if (response.status === 403) {
-        throw new Error("Kunci API USDA dinonaktifkan atau salah. Silakan ganti dengan kunci baru di usda-api.ts");
+        throw new Error("Kunci API USDA bermasalah. Silakan periksa kembali kunci Anda.");
       }
       throw new Error(errorData.error?.message || `API Error: ${response.status}`);
     }
