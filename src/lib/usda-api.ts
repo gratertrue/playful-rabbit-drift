@@ -1,6 +1,7 @@
 /**
- * USDA & Translation API Utility
+ * USDA & Translation API Utility with Mobile Debugging
  */
+import { debugStore } from '@/hooks/use-debug-store';
 
 const BASE_URL = "https://api.nal.usda.gov/fdc/v1";
 
@@ -24,16 +25,25 @@ export async function translateText(text: string, pair: 'id|en' | 'en|id'): Prom
   
   const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`;
   try {
+    debugStore.addLog('info', `Menerjemahkan: "${text}" (${pair})`);
+    
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // Naikkan ke 5 detik untuk mobile
     
     const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
     
     const data = await response.json();
-    return data.responseStatus === 200 ? data.responseData.translatedText : text;
-  } catch (error) {
-    console.warn("Translation failed, using original text");
+    if (data.responseStatus === 200) {
+      const translated = data.responseData.translatedText;
+      debugStore.addLog('info', `Hasil Terjemahan: "${translated}"`);
+      return translated;
+    }
+    
+    debugStore.addLog('warn', `Penerjemah merespon status: ${data.responseStatus}`);
+    return text;
+  } catch (error: any) {
+    debugStore.addLog('warn', `Gagal menerjemahkan: ${error.message}`);
     return text;
   }
 }
@@ -44,19 +54,23 @@ function isLikelyEnglish(text: string): boolean {
 }
 
 export async function searchFoods(query: string, pageSize: number = 15): Promise<FoodItem[]> {
-  // Ambil API KEY di dalam fungsi agar selalu mendapatkan nilai terbaru
   const apiKey = import.meta.env.VITE_USDA_API_KEY;
 
   if (!apiKey) {
-    throw new Error("Kunci API (VITE_USDA_API_KEY) tidak ditemukan. Pastikan sudah diatur di .env");
+    debugStore.addLog('error', "API KEY USDA Kosong!");
+    throw new Error("Kunci API tidak ditemukan.");
   }
 
   try {
     let searchTerms = query.trim();
+    debugStore.addLog('info', `Memulai pencarian USDA untuk: "${searchTerms}"`);
     
+    // Coba terjemahkan jika bukan bahasa Inggris
     if (!isLikelyEnglish(searchTerms)) {
       const translated = await translateText(searchTerms, 'id|en');
-      if (translated) searchTerms = translated;
+      if (translated && translated.toLowerCase() !== searchTerms.toLowerCase()) {
+        searchTerms = translated;
+      }
     }
 
     const params = new URLSearchParams({
@@ -69,14 +83,18 @@ export async function searchFoods(query: string, pageSize: number = 15): Promise
     const response = await fetch(`${BASE_URL}/foods/search?${params.toString()}`);
 
     if (!response.ok) {
-      if (response.status === 403) throw new Error("Kunci API USDA tidak valid atau limit tercapai.");
-      if (response.status === 429) throw new Error("Terlalu banyak permintaan. Silakan coba lagi nanti.");
-      throw new Error(`Kesalahan Server API: ${response.status}`);
+      debugStore.addLog('error', `USDA API Error: ${response.status}`);
+      throw new Error(`Kesalahan API: ${response.status}`);
     }
 
     const data = await response.json();
+    const results = data.foods || [];
     
-    if ((!data.foods || data.foods.length === 0) && searchTerms !== query.trim()) {
+    debugStore.addLog('info', `Ditemukan ${results.length} hasil untuk "${searchTerms}"`);
+
+    // Fallback: Jika hasil 0 dan tadi pakai terjemahan, coba cari kata aslinya saja
+    if (results.length === 0 && searchTerms !== query.trim()) {
+      debugStore.addLog('info', `Mencoba fallback dengan kata asli: "${query.trim()}"`);
       const retryParams = new URLSearchParams({
         api_key: apiKey,
         query: query.trim(),
@@ -88,13 +106,9 @@ export async function searchFoods(query: string, pageSize: number = 15): Promise
       return retryData.foods || [];
     }
 
-    return data.foods || [];
+    return results;
   } catch (error: any) {
-    console.error("Search Error Details:", error);
-    // Jika error karena jaringan (fetch failed)
-    if (error.message.includes('Failed to fetch')) {
-      throw new Error("Koneksi internet bermasalah atau server API tidak terjangkau.");
-    }
+    debugStore.addLog('error', `Search Exception: ${error.message}`);
     throw error;
   }
 }
