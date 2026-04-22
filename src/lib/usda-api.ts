@@ -1,8 +1,9 @@
 /**
- * USDA & Translation API Utility with Mobile Debugging
+ * USDA & Translation API Utility
  */
-import { debugStore } from '@/hooks/use-debug-store';
 
+// Menggunakan kunci API baru yang diberikan pengguna
+const USDA_API_KEY = "lPjMa22MuuIYtCILxkHRdEHse3eM7uqH5sHEbSKR"; 
 const BASE_URL = "https://api.nal.usda.gov/fdc/v1";
 
 export interface Nutrient {
@@ -21,45 +22,31 @@ export interface FoodItem {
 }
 
 export async function translateText(text: string, pair: 'id|en' | 'en|id'): Promise<string> {
-  if (!text || /^\d+$/.test(text) || text.length < 2) return text;
-  
+  if (!text || /^\d+$/.test(text)) return text;
   const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`;
   try {
-    debugStore.addLog('info', `Menerjemahkan: "${text}" (${pair})`);
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    
+    const response = await fetch(url);
     const data = await response.json();
-    if (data.responseStatus === 200) {
-      const translated = data.responseData.translatedText;
-      debugStore.addLog('info', `Hasil Terjemahan: "${translated}"`);
-      return translated;
-    }
-    return text;
-  } catch (error: any) {
-    debugStore.addLog('warn', `Gagal menerjemahkan: ${error.message}`);
+    return data.responseStatus === 200 ? data.responseData.translatedText : text;
+  } catch (error) {
     return text;
   }
 }
 
+function isLikelyEnglish(text: string): boolean {
+  const commonEnglish = /\b(chicken|rice|egg|bread|milk|water|beef|apple|fruit|meat|fish|potato)\b/i;
+  return commonEnglish.test(text) || !/[^\x00-\x7F]/.test(text);
+}
+
 export async function searchFoods(query: string, pageSize: number = 15): Promise<FoodItem[]> {
-  // Gunakan DEMO_KEY jika VITE_USDA_API_KEY tidak ditemukan
-  const apiKey = import.meta.env.VITE_USDA_API_KEY || "DEMO_KEY";
-
-  if (apiKey === "DEMO_KEY") {
-    debugStore.addLog('warn', "Menggunakan DEMO_KEY (Limit terbatas). Mohon atur VITE_USDA_API_KEY untuk penggunaan penuh.");
-  }
-
   try {
-    const searchTerms = query.trim();
-    debugStore.addLog('info', `Mencari di USDA (English): "${searchTerms}"`);
-    
+    let searchTerms = query;
+    if (!isLikelyEnglish(query)) {
+      searchTerms = await translateText(query, 'id|en');
+    }
+
     const params = new URLSearchParams({
-      api_key: apiKey,
+      api_key: USDA_API_KEY,
       query: searchTerms,
       pageSize: pageSize.toString(),
       dataType: "Foundation,SR Legacy,Branded"
@@ -68,21 +55,17 @@ export async function searchFoods(query: string, pageSize: number = 15): Promise
     const response = await fetch(`${BASE_URL}/foods/search?${params.toString()}`);
 
     if (!response.ok) {
-      if (response.status === 429) {
-        debugStore.addLog('error', "Limit API tercapai (Rate Limit).");
-        throw new Error("Terlalu banyak pencarian. Coba lagi nanti atau gunakan API Key pribadi.");
+      const errorData = await response.json().catch(() => ({}));
+      if (response.status === 403) {
+        throw new Error("Kunci API USDA bermasalah. Silakan periksa kembali kunci Anda.");
       }
-      debugStore.addLog('error', `USDA API Error: ${response.status}`);
-      throw new Error(`Kesalahan API: ${response.status}`);
+      throw new Error(errorData.error?.message || `API Error: ${response.status}`);
     }
 
     const data = await response.json();
-    const results = data.foods || [];
-    
-    debugStore.addLog('info', `Ditemukan ${results.length} hasil untuk "${searchTerms}"`);
-    return results;
-  } catch (error: any) {
-    debugStore.addLog('error', `Search Exception: ${error.message}`);
+    return data.foods || [];
+  } catch (error) {
+    console.error("Search Error:", error);
     throw error;
   }
 }

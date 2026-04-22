@@ -12,14 +12,11 @@ import WaterTracker from '@/components/WaterTracker';
 import SleepTracker from '@/components/SleepTracker';
 import Goals from '@/components/Goals';
 import OnboardingGuide from '@/components/OnboardingGuide';
-import DebugOverlay from '@/components/DebugOverlay';
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
-import { useDebugStore } from '@/hooks/use-debug-store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { 
   Select,
   SelectContent,
@@ -28,14 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { showSuccess } from '@/utils/toast';
-import { Scale, User as UserIcon, Activity, Utensils, Calendar, Calculator, Bug } from 'lucide-react';
+import { Scale, User as UserIcon, Activity, Utensils, Calendar, Calculator, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const { profile, setProfile, achievements, calculateBMI, calculateRecommendedCalories } = useNutritionStore();
-  const { isDebugMode, toggleDebugMode } = useDebugStore();
 
   const handleAutoCalorie = () => {
     const recommended = calculateRecommendedCalories();
@@ -54,6 +50,19 @@ const Index = () => {
               <Goals />
             </div>
             <NutritionDashboard />
+            <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
+              <CardContent className="p-2 flex items-center justify-around">
+                <Button variant="ghost" onClick={() => setActiveTab('recipes')} className="flex flex-col gap-1 h-auto py-1 text-slate-400 hover:text-cyan-400">
+                  <Utensils className="h-4 w-4" />
+                  <span className="text-[8px] uppercase font-bold">Resep</span>
+                </Button>
+                <div className="w-px h-4 bg-slate-800" />
+                <Button variant="ghost" onClick={() => setActiveTab('planner')} className="flex flex-col gap-1 h-auto py-1 text-slate-400 hover:text-cyan-400">
+                  <Calendar className="h-4 w-4" />
+                  <span className="text-[8px] uppercase font-bold">Rencana</span>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         );
       case 'search':
@@ -62,6 +71,8 @@ const Index = () => {
         return <RecipeBuilder />;
       case 'planner':
         return <MealPlanner />;
+      case 'hydration':
+        return <div className="max-w-xl mx-auto"><WaterTracker /></div>;
       case 'history':
         return <NutritionHistory />;
       case 'profile':
@@ -112,6 +123,33 @@ const Index = () => {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] text-slate-500 uppercase font-bold">Berat (kg)</Label>
+                      <Input type="number" value={profile.weight} onChange={e => setProfile({...profile, weight: Number(e.target.value)})} className="h-9 bg-slate-800 border-slate-700 text-sm" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] text-slate-500 uppercase font-bold">Tinggi (cm)</Label>
+                      <Input type="number" value={profile.height} onChange={e => setProfile({...profile, height: Number(e.target.value)})} className="h-9 bg-slate-800 border-slate-700 text-sm" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-slate-500 uppercase font-bold">Tingkat Aktivitas</Label>
+                    <Select value={profile.activityLevel} onValueChange={(val: any) => setProfile({...profile, activityLevel: val})}>
+                      <SelectTrigger className="h-9 bg-slate-800 border-slate-700 text-sm">
+                        <SelectValue placeholder="Pilih Aktivitas" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                        <SelectItem value="sedentary">Sedenter (Jarang Olahraga)</SelectItem>
+                        <SelectItem value="light">Ringan (1-2 hari/minggu)</SelectItem>
+                        <SelectItem value="moderate">Moderat (3-5 hari/minggu)</SelectItem>
+                        <SelectItem value="active">Aktif (6-7 hari/minggu)</SelectItem>
+                        <SelectItem value="very_active">Sangat Aktif (Atlet/Fisik Berat)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-1.5">
                     <Label className="text-[10px] text-slate-500 uppercase font-bold">Target Kesehatan</Label>
                     <Select value={profile.goal} onValueChange={(val: any) => setProfile({...profile, goal: val})}>
@@ -136,18 +174,10 @@ const Index = () => {
                       </Button>
                     </div>
                   </div>
-                </div>
 
-                <div className="pt-4 border-t border-slate-800">
-                  <div className="flex items-center justify-between p-3 bg-red-500/5 rounded-xl border border-red-500/10">
-                    <div className="flex items-center gap-3">
-                      <Bug className="h-5 w-5 text-red-400" />
-                      <div>
-                        <p className="text-xs font-bold text-white">Mode Debug (Mobile)</p>
-                        <p className="text-[10px] text-slate-500">Aktifkan untuk melihat log error di HP.</p>
-                      </div>
-                    </div>
-                    <Switch checked={isDebugMode} onCheckedChange={toggleDebugMode} />
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-slate-500 uppercase font-bold">Target Air (ml)</Label>
+                    <Input type="number" value={profile.waterGoal} onChange={e => setProfile({...profile, waterGoal: Number(e.target.value)})} className="h-9 bg-slate-800 border-slate-700 text-sm" />
                   </div>
                 </div>
 
@@ -161,6 +191,20 @@ const Index = () => {
             </Card>
           </div>
         );
+      case 'achievements':
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {achievements.map(a => (
+              <Card key={a.id} className={cn(
+                "bg-slate-900/50 border-slate-800 p-3 text-center transition-all",
+                a.unlocked ? 'opacity-100 border-cyan-500/30' : 'opacity-30 grayscale'
+              )}>
+                <div className="text-xl mb-1">{a.icon}</div>
+                <h3 className="text-[10px] font-bold text-white truncate">{a.title}</h3>
+              </Card>
+            ))}
+          </div>
+        );
       default:
         return null;
     }
@@ -169,7 +213,6 @@ const Index = () => {
   return (
     <div className="flex min-h-screen bg-[#0F172A] text-slate-200 font-sans selection:bg-cyan-500/30">
       <OnboardingGuide onComplete={() => setActiveTab('profile')} />
-      <DebugOverlay />
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <main className="flex-1 p-2 md:p-4 overflow-y-auto pb-20 md:pb-4">
