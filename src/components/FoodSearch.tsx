@@ -48,7 +48,7 @@ const FoodSearch = () => {
       setHasSearched(true);
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        showError(err.message || "Gagal menghubungi server makanan.");
+        showError("Gagal mencari makanan. Periksa koneksi internet Anda.");
       }
     } finally {
       setLoading(false);
@@ -58,7 +58,7 @@ const FoodSearch = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query.length >= 3) performSearch(query);
-    }, 1000);
+    }, 800);
     return () => clearTimeout(timer);
   }, [query, performSearch]);
 
@@ -85,10 +85,11 @@ const FoodSearch = () => {
     setTranslatedName(food.description);
     setTranslating(true);
     try {
+      // Terjemahan hanya dilakukan setelah item diklik
       const idName = await translateText(food.description, 'en|id');
       setTranslatedName(idName);
     } catch (e) {
-      // Gunakan nama asli
+      // Tetap gunakan nama asli jika gagal
     } finally {
       setTranslating(false);
     }
@@ -119,7 +120,7 @@ const FoodSearch = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && performSearch(query)}
-              placeholder="Cari makanan (Ayam, Nasi, dll)..."
+              placeholder="Search in English (e.g. Chicken, Rice, Egg)..."
               className="pl-12 pr-12 bg-slate-900/80 border-slate-800 text-white h-14 text-lg rounded-2xl focus:ring-2 focus:ring-cyan-500/50 transition-all shadow-2xl"
             />
             {query && (
@@ -135,7 +136,7 @@ const FoodSearch = () => {
             onClick={() => performSearch(query)}
             className="h-14 px-6 rounded-2xl bg-cyan-600 hover:bg-cyan-700 shadow-2xl font-bold hidden sm:flex"
           >
-            Cari
+            Search
           </Button>
           <Button 
             onClick={() => setShowScanner(true)}
@@ -150,7 +151,7 @@ const FoodSearch = () => {
           disabled={loading || query.length < 2}
           className="w-full h-12 rounded-xl bg-cyan-600 hover:bg-cyan-700 font-bold sm:hidden"
         >
-          {loading ? "Mencari..." : "Cari Makanan"}
+          {loading ? "Searching..." : "Search Food"}
         </Button>
       </div>
 
@@ -193,9 +194,9 @@ const FoodSearch = () => {
           <div className="text-center py-12 space-y-4">
             <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 inline-block">
               <AlertCircle className="h-12 w-12 text-slate-700 mx-auto mb-4" />
-              <h3 className="text-white font-bold text-xl">Tidak Ditemukan</h3>
+              <h3 className="text-white font-bold text-xl">No Results Found</h3>
               <p className="text-slate-500 max-w-xs mx-auto mt-2">
-                Coba gunakan kata kunci dalam Bahasa Inggris (misal: "Chicken" untuk Ayam) jika pencarian lokal gagal.
+                Please use English terms for better results.
               </p>
             </div>
           </div>
@@ -209,12 +210,12 @@ const FoodSearch = () => {
               <DialogHeader>
                 <div className="flex items-center gap-2 text-cyan-400 mb-1">
                   <Zap className="h-4 w-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Analisis Nutrisi</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Nutrition Analysis</span>
                 </div>
                 <DialogTitle className="text-2xl font-bold">{selectedFood.description}</DialogTitle>
                 <div className="flex items-center gap-1.5 text-slate-500 text-xs italic">
                   <Languages className="h-3 w-3" />
-                  <span>{translating ? "Menerjemahkan..." : `Nama Lokal: ${translatedName}`}</span>
+                  <span>{translating ? "Translating..." : `Bahasa Indonesia: ${translatedName}`}</span>
                 </div>
               </DialogHeader>
 
@@ -222,7 +223,7 @@ const FoodSearch = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
                   <div className="space-y-6">
                     <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
-                      <label className="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Porsi (Gram)</label>
+                      <label className="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Portion (Grams)</label>
                       <Input 
                         type="number" 
                         value={amount}
@@ -233,7 +234,7 @@ const FoodSearch = () => {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 text-center">
-                        <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Kalori</p>
+                        <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Calories</p>
                         <p className="text-2xl font-black text-white">
                           {Math.round(getNutrientValue(selectedFood.foodNutrients, "Energy") * (amount / 100))}
                         </p>
@@ -252,7 +253,7 @@ const FoodSearch = () => {
                   <div className="flex flex-col h-full">
                     <div className="flex items-center gap-2 mb-3">
                       <ListFilter className="h-4 w-4 text-cyan-400" />
-                      <span className="text-xs font-bold text-slate-400 uppercase">Rincian Nutrisi</span>
+                      <span className="text-xs font-bold text-slate-400 uppercase">Nutrient Details</span>
                     </div>
                     <ScrollArea className="flex-1 bg-slate-900/30 rounded-2xl border border-slate-800 p-4">
                       <div className="space-y-3">
@@ -278,7 +279,7 @@ const FoodSearch = () => {
                   className="w-full bg-cyan-600 hover:bg-cyan-700 h-14 text-lg font-bold rounded-2xl"
                 >
                   <Plus className="h-5 w-5 mr-2" />
-                  Tambah ke Log
+                  Add to Log
                 </Button>
               </DialogFooter>
             </>

@@ -1,12 +1,15 @@
 /**
  * USDA & Translation API Utility
- * Dioptimalkan untuk keandalan koneksi di perangkat Android.
+ * Fokus pada pencarian Bahasa Inggris untuk akurasi maksimal.
  */
 
 const USDA_API_KEY = import.meta.env.VITE_USDA_API_KEY || "DEMO_KEY"; 
 const BASE_URL = "https://api.nal.usda.gov/fdc/v1";
 
-export async function translateText(text: string, pair: 'id|en' | 'en|id'): Promise<string> {
+/**
+ * Menerjemahkan teks (digunakan setelah item dipilih)
+ */
+export async function translateText(text: string, pair: 'en|id' | 'id|en'): Promise<string> {
   if (!text || /^\d+$/.test(text)) return text;
   
   const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`;
@@ -24,59 +27,42 @@ export async function translateText(text: string, pair: 'id|en' | 'en|id'): Prom
     const data = await response.json();
     return data.responseStatus === 200 ? data.responseData.translatedText : text;
   } catch (error) {
-    console.warn("Translation failed, using original text");
     return text;
   }
 }
 
+/**
+ * Mencari makanan langsung ke USDA (Fokus Bahasa Inggris)
+ */
 export async function searchFoods(query: string, pageSize: number = 15): Promise<FoodItem[]> {
-  if (!query.trim()) return [];
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) return [];
 
-  const fetchFromUSDA = async (searchTerm: string) => {
-    const params = new URLSearchParams({
-      api_key: USDA_API_KEY,
-      query: searchTerm,
-      pageSize: pageSize.toString(),
-      dataType: "Foundation,SR Legacy,Branded"
-    });
+  const params = new URLSearchParams({
+    api_key: USDA_API_KEY,
+    query: trimmedQuery,
+    pageSize: pageSize.toString(),
+    dataType: "Foundation,SR Legacy,Branded"
+  });
 
+  try {
     const response = await fetch(`${BASE_URL}/foods/search?${params.toString()}`, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
+        'Accept': 'application/json'
+      },
+      mode: 'cors' // Memastikan CORS aktif untuk mobile
     });
 
     if (!response.ok) {
-      if (response.status === 429) throw new Error("Limit API tercapai (Rate Limit)");
-      throw new Error(`Server Error: ${response.status}`);
+      if (response.status === 429) throw new Error("Terlalu banyak permintaan (Rate Limit)");
+      throw new Error("Gagal menghubungi server USDA");
     }
 
     const data = await response.json();
     return data.foods || [];
-  };
-
-  try {
-    // Strategi: Coba cari dengan kata asli dulu, lalu coba dengan terjemahan
-    // Ini memastikan jika terjemahan gagal, pencarian tetap berjalan
-    const translated = await translateText(query, 'id|en');
-    
-    // Jalankan pencarian untuk kata asli dan terjemahan (jika berbeda)
-    const searchTasks = [fetchFromUSDA(query)];
-    if (translated.toLowerCase() !== query.toLowerCase()) {
-      searchTasks.push(fetchFromUSDA(translated));
-    }
-
-    const resultsArray = await Promise.all(searchTasks);
-    
-    // Gabungkan hasil dan hapus duplikat berdasarkan fdcId
-    const combinedResults = resultsArray.flat();
-    const uniqueResults = Array.from(new Map(combinedResults.map(item => [item.fdcId, item])).values());
-
-    return uniqueResults;
   } catch (error: any) {
-    console.error("Search Error:", error);
+    console.error("USDA Search Error:", error);
     throw error;
   }
 }
