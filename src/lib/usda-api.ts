@@ -49,7 +49,7 @@ function isLikelyEnglish(text: string): boolean {
 }
 
 /**
- * Fungsi Pencarian USDA yang sangat cepat
+ * Fungsi Pencarian USDA yang diperbaiki (Menggunakan GET untuk menghindari CORS)
  */
 export async function searchFoods(query: string, pageSize: number = 15): Promise<FoodItem[]> {
   try {
@@ -59,21 +59,20 @@ export async function searchFoods(query: string, pageSize: number = 15): Promise
       searchTerms = await translateText(query, 'id|en');
     }
 
-    // 2. Request ke USDA dengan prioritas data akurat (Foundation & SR Legacy)
-    const response = await fetch(`${BASE_URL}/foods/search?api_key=${USDA_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: searchTerms,
-        pageSize: pageSize,
-        // Prioritaskan data laboratorium (Foundation/SR Legacy) daripada data brand yang sering tidak akurat
-        dataType: ["Foundation", "SR Legacy", "Branded"],
-        sortBy: "dataType.keyword",
-        sortOrder: "asc"
-      })
+    // 2. Gunakan GET request untuk menghindari preflight OPTIONS (CORS)
+    const params = new URLSearchParams({
+      api_key: USDA_API_KEY,
+      query: searchTerms,
+      pageSize: pageSize.toString(),
+      dataType: "Foundation,SR Legacy,Branded"
     });
 
-    if (!response.ok) throw new Error("USDA API Error");
+    const response = await fetch(`${BASE_URL}/foods/search?${params.toString()}`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `USDA API Error: ${response.status}`);
+    }
 
     const data = await response.json();
     return data.foods || [];
