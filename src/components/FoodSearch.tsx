@@ -39,7 +39,6 @@ const FoodSearch = () => {
     const trimmed = searchQuery.trim();
     if (!trimmed) return;
 
-    // Batalkan pencarian sebelumnya jika ada
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
 
@@ -50,29 +49,24 @@ const FoodSearch = () => {
       setHasSearched(true);
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        console.error("Search error:", err);
-        showError("Gagal mencari makanan. Coba lagi nanti.");
+        showError("Pencarian gagal. Periksa koneksi Anda.");
       }
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (query.length >= 3 && !showScanner) {
-        performSearch(query);
-      }
-    }, 600);
+      if (query.length >= 3 && !showScanner) performSearch(query);
+    }, 800);
     return () => clearTimeout(timer);
   }, [query, performSearch, showScanner]);
 
   const handleBarcodeScan = async (barcode: string) => {
-    // 1. Tutup scanner segera
     setShowScanner(false);
     
-    // 2. Beri jeda agar hardware kamera benar-benar rilis (PENTING UNTUK ANDROID)
+    // Jeda transisi untuk memastikan kamera benar-benar mati sebelum memproses data
     setTimeout(async () => {
       setLoading(true);
       try {
@@ -81,14 +75,14 @@ const FoodSearch = () => {
           handleSelectFood(product);
           showSuccess("Produk ditemukan!");
         } else {
-          showError("Produk tidak terdaftar di database.");
+          showError("Produk tidak ditemukan di database.");
         }
       } catch (err) {
-        showError("Gagal memproses data barcode.");
+        showError("Gagal memproses barcode.");
       } finally {
         setLoading(false);
       }
-    }, 500);
+    }, 400);
   };
 
   const handleSelectFood = async (food: FoodItem) => {
@@ -99,7 +93,7 @@ const FoodSearch = () => {
       const idName = await translateText(food.description, 'en|id');
       setTranslatedName(idName);
     } catch (e) {
-      // Fallback ke nama asli
+      // Fallback
     } finally {
       setTranslating(false);
     }
@@ -113,10 +107,9 @@ const FoodSearch = () => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {showScanner && (
           <BarcodeScanner 
-            key="global-scanner"
             onScan={handleBarcodeScan} 
             onClose={() => setShowScanner(false)} 
           />
@@ -133,7 +126,7 @@ const FoodSearch = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && performSearch(query)}
-              placeholder="Cari dalam B. Inggris (misal: Chicken)..."
+              placeholder="Search in English (e.g. Chicken, Rice)..."
               className="pl-12 pr-12 bg-slate-900/80 border-slate-800 text-white h-14 text-lg rounded-2xl focus:ring-2 focus:ring-cyan-500/50 transition-all shadow-2xl"
             />
             {query && (
@@ -145,6 +138,12 @@ const FoodSearch = () => {
               </button>
             )}
           </div>
+          <Button 
+            onClick={() => performSearch(query)}
+            className="h-14 px-6 rounded-2xl bg-cyan-600 hover:bg-cyan-700 shadow-2xl font-bold hidden sm:flex"
+          >
+            Search
+          </Button>
           <Button 
             onClick={() => setShowScanner(true)}
             className="h-14 w-14 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 shadow-2xl shrink-0 group"
@@ -198,9 +197,9 @@ const FoodSearch = () => {
           <div className="text-center py-12 space-y-4">
             <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 inline-block">
               <AlertCircle className="h-12 w-12 text-slate-700 mx-auto mb-4" />
-              <h3 className="text-white font-bold text-xl">Tidak Ada Hasil</h3>
+              <h3 className="text-white font-bold text-xl">No Results Found</h3>
               <p className="text-slate-500 max-w-xs mx-auto mt-2">
-                Gunakan istilah Bahasa Inggris untuk hasil yang lebih akurat.
+                Please use English terms for better results.
               </p>
             </div>
           </div>
@@ -214,12 +213,12 @@ const FoodSearch = () => {
               <DialogHeader>
                 <div className="flex items-center gap-2 text-cyan-400 mb-1">
                   <Zap className="h-4 w-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Analisis Nutrisi</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Nutrition Analysis</span>
                 </div>
                 <DialogTitle className="text-2xl font-bold">{selectedFood.description}</DialogTitle>
                 <div className="flex items-center gap-1.5 text-slate-500 text-xs italic">
                   <Languages className="h-3 w-3" />
-                  <span>{translating ? "Menerjemahkan..." : `B. Indonesia: ${translatedName}`}</span>
+                  <span>{translating ? "Translating..." : `Bahasa Indonesia: ${translatedName}`}</span>
                 </div>
               </DialogHeader>
 
@@ -227,7 +226,7 @@ const FoodSearch = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
                   <div className="space-y-6">
                     <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
-                      <label className="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Porsi (Gram)</label>
+                      <label className="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Portion (Grams)</label>
                       <Input 
                         type="number" 
                         value={amount}
@@ -238,7 +237,7 @@ const FoodSearch = () => {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 text-center">
-                        <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Kalori</p>
+                        <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Calories</p>
                         <p className="text-2xl font-black text-white">
                           {Math.round(getNutrientValue(selectedFood.foodNutrients, "Energy") * (amount / 100))}
                         </p>
@@ -257,7 +256,7 @@ const FoodSearch = () => {
                   <div className="flex flex-col h-full">
                     <div className="flex items-center gap-2 mb-3">
                       <ListFilter className="h-4 w-4 text-cyan-400" />
-                      <span className="text-xs font-bold text-slate-400 uppercase">Detail Nutrisi</span>
+                      <span className="text-xs font-bold text-slate-400 uppercase">Nutrient Details</span>
                     </div>
                     <ScrollArea className="flex-1 bg-slate-900/30 rounded-2xl border border-slate-800 p-4">
                       <div className="space-y-3">
@@ -283,7 +282,7 @@ const FoodSearch = () => {
                   className="w-full bg-cyan-600 hover:bg-cyan-700 h-14 text-lg font-bold rounded-2xl"
                 >
                   <Plus className="h-5 w-5 mr-2" />
-                  Tambahkan ke Log
+                  Add to Log
                 </Button>
               </DialogFooter>
             </>
