@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import HealthAnalyzer from './HealthAnalyzer';
 import { cn } from '@/lib/utils';
 
