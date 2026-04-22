@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { searchFoods, FoodItem, getNutrientValue, calculateSmartScore, translateText } from '@/lib/usda-api';
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
-import { Search, Loader2, ChevronRight, Globe, AlertCircle, X, ListFilter, Plus, Languages, Zap, Filter } from 'lucide-react';
+import { Search, Loader2, ChevronRight, Globe, AlertCircle, X, ListFilter, Plus, Languages, Zap } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from '@/utils/toast';
 import {
@@ -36,30 +36,13 @@ const FoodSearch = () => {
       return;
     }
 
-    // Logika Pencarian Ketat (Strict Search)
-    const isStrict = searchQuery.startsWith('.');
-    const actualQuery = isStrict ? searchQuery.slice(1).trim() : searchQuery;
-
-    if (!actualQuery) {
-      setResults([]);
-      return;
-    }
-
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
 
     setLoading(true);
     try {
-      let data = await searchFoods(actualQuery, 25); // Ambil lebih banyak data untuk disaring
-
-      if (isStrict) {
-        const words = actualQuery.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-        data = data.filter(food => 
-          words.every(word => food.description.toLowerCase().includes(word))
-        );
-      }
-
-      setResults(data.slice(0, 15)); // Tampilkan 15 teratas setelah penyaringan
+      const data = await searchFoods(searchQuery, 15);
+      setResults(data);
     } catch (err: any) {
       if (err.name !== 'AbortError') showError("Gagal mencari makanan");
     } finally {
@@ -70,7 +53,7 @@ const FoodSearch = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query) performSearch(query);
-    }, 400);
+    }, 400); // Debounce lebih lama untuk akurasi pengetikan
     return () => clearTimeout(timer);
   }, [query, performSearch]);
 
@@ -79,6 +62,7 @@ const FoodSearch = () => {
     setTranslatedName('');
     setTranslating(true);
     
+    // Terjemahkan nama HANYA saat dipilih (On-Demand)
     try {
       const idName = await translateText(food.description, 'en|id');
       setTranslatedName(idName);
@@ -104,7 +88,7 @@ const FoodSearch = () => {
         <Input 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cari makanan... (Gunakan . untuk pencarian ketat)"
+          placeholder="Cari makanan (English/Indonesia)..."
           className="pl-12 pr-12 bg-slate-900/80 border-slate-800 text-white h-14 text-lg rounded-2xl focus:ring-2 focus:ring-cyan-500/50 transition-all shadow-2xl"
         />
         {query && (
@@ -116,16 +100,6 @@ const FoodSearch = () => {
           </button>
         )}
       </div>
-
-      {query.startsWith('.') && query.length > 1 && (
-        <div className="flex items-center gap-2 px-2 animate-in slide-in-from-left-2">
-          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 flex gap-1.5 py-1">
-            <Filter className="h-3 w-3" />
-            Mode Pencarian Ketat Aktif
-          </Badge>
-          <span className="text-[10px] text-slate-500 italic">Menampilkan hasil yang mengandung semua kata kunci.</span>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 gap-3">
         {results.map((food) => {
@@ -153,6 +127,9 @@ const FoodSearch = () => {
                       <Badge variant="outline" className="text-[10px] border-slate-800 bg-slate-950/50 text-blue-400">
                         {getNutrientValue(food.foodNutrients, "Protein").toFixed(1)}g Protein
                       </Badge>
+                      {food.dataType === 'Foundation' && (
+                        <Badge className="bg-cyan-500/20 text-cyan-400 text-[8px] border-cyan-500/30">VERIFIED</Badge>
+                      )}
                     </div>
                   </div>
                   <ChevronRight className="h-5 w-5 text-slate-700 group-hover:text-cyan-400 transition-colors" />
@@ -166,7 +143,6 @@ const FoodSearch = () => {
           <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-3xl bg-slate-900/20">
             <AlertCircle className="h-8 w-8 text-slate-700 mx-auto mb-4" />
             <p className="text-slate-400 font-bold text-lg">Makanan tidak ditemukan</p>
-            <p className="text-xs text-slate-600 mt-1">Coba hapus tanda titik jika hasil terlalu spesifik.</p>
           </div>
         )}
       </div>
