@@ -2,7 +2,6 @@
  * USDA & Translation API Utility
  */
 
-const USDA_API_KEY = import.meta.env.VITE_USDA_API_KEY; 
 const BASE_URL = "https://api.nal.usda.gov/fdc/v1";
 
 export interface Nutrient {
@@ -26,7 +25,7 @@ export async function translateText(text: string, pair: 'id|en' | 'en|id'): Prom
   const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`;
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // Timeout 3 detik untuk terjemahan
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
     
     const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
@@ -45,21 +44,23 @@ function isLikelyEnglish(text: string): boolean {
 }
 
 export async function searchFoods(query: string, pageSize: number = 15): Promise<FoodItem[]> {
-  if (!USDA_API_KEY) {
-    throw new Error("Kunci API tidak ditemukan di variabel lingkungan.");
+  // Ambil API KEY di dalam fungsi agar selalu mendapatkan nilai terbaru
+  const apiKey = import.meta.env.VITE_USDA_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("Kunci API (VITE_USDA_API_KEY) tidak ditemukan. Pastikan sudah diatur di .env");
   }
 
   try {
     let searchTerms = query.trim();
     
-    // Coba terjemahkan jika bukan bahasa Inggris
     if (!isLikelyEnglish(searchTerms)) {
       const translated = await translateText(searchTerms, 'id|en');
       if (translated) searchTerms = translated;
     }
 
     const params = new URLSearchParams({
-      api_key: USDA_API_KEY,
+      api_key: apiKey,
       query: searchTerms,
       pageSize: pageSize.toString(),
       dataType: "Foundation,SR Legacy,Branded"
@@ -68,16 +69,16 @@ export async function searchFoods(query: string, pageSize: number = 15): Promise
     const response = await fetch(`${BASE_URL}/foods/search?${params.toString()}`);
 
     if (!response.ok) {
-      if (response.status === 403) throw new Error("Kunci API USDA tidak valid atau dinonaktifkan.");
-      throw new Error(`API Error: ${response.status}`);
+      if (response.status === 403) throw new Error("Kunci API USDA tidak valid atau limit tercapai.");
+      if (response.status === 429) throw new Error("Terlalu banyak permintaan. Silakan coba lagi nanti.");
+      throw new Error(`Kesalahan Server API: ${response.status}`);
     }
 
     const data = await response.json();
     
-    // Jika hasil kosong dengan kata terjemahan, coba cari dengan kata asli
     if ((!data.foods || data.foods.length === 0) && searchTerms !== query.trim()) {
       const retryParams = new URLSearchParams({
-        api_key: USDA_API_KEY,
+        api_key: apiKey,
         query: query.trim(),
         pageSize: pageSize.toString(),
         dataType: "Foundation,SR Legacy,Branded"
@@ -88,8 +89,12 @@ export async function searchFoods(query: string, pageSize: number = 15): Promise
     }
 
     return data.foods || [];
-  } catch (error) {
-    console.error("Search Error:", error);
+  } catch (error: any) {
+    console.error("Search Error Details:", error);
+    // Jika error karena jaringan (fetch failed)
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error("Koneksi internet bermasalah atau server API tidak terjangkau.");
+    }
     throw error;
   }
 }
