@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { useState, useEffect } from 'react';
 
 interface LogEntry {
   id: string;
@@ -8,41 +8,72 @@ interface LogEntry {
   stack?: string;
 }
 
-interface DebugStore {
-  logs: LogEntry[];
-  isDebugMode: boolean;
-  addLog: (type: 'error' | 'warn' | 'info', message: string, stack?: string) => void;
-  clearLogs: () => void;
-  toggleDebugMode: () => void;
-}
+// State internal sederhana tanpa zustand
+let logs: LogEntry[] = [];
+let isDebugMode = localStorage.getItem('debug_mode') === 'true';
+const listeners = new Set<() => void>();
 
-export const useDebugStore = create<DebugStore>((set) => ({
-  logs: [],
-  isDebugMode: localStorage.getItem('debug_mode') === 'true',
-  addLog: (type, message, stack) => set((state) => ({
-    logs: [{
+const notify = () => listeners.forEach(l => l());
+
+export const debugStore = {
+  getLogs: () => logs,
+  getIsDebugMode: () => isDebugMode,
+  addLog: (type: 'error' | 'warn' | 'info', message: string, stack?: string) => {
+    logs = [{
       id: Math.random().toString(36).substring(7),
       timestamp: new Date().toLocaleTimeString(),
       type,
       message,
       stack
-    }, ...state.logs].slice(0, 50) // Simpan 50 log terakhir
-  })),
-  clearLogs: () => set({ logs: [] }),
-  toggleDebugMode: () => set((state) => {
-    const next = !state.isDebugMode;
-    localStorage.setItem('debug_mode', String(next));
-    return { isDebugMode: next };
-  }),
-}));
+    }, ...logs].slice(0, 50);
+    notify();
+  },
+  clearLogs: () => {
+    logs = [];
+    notify();
+  },
+  toggleDebugMode: () => {
+    isDebugMode = !isDebugMode;
+    localStorage.setItem('debug_mode', String(isDebugMode));
+    notify();
+  }
+};
+
+// Hook untuk digunakan di komponen
+export function useDebugStore() {
+  const [state, setState] = useState({
+    logs: debugStore.getLogs(),
+    isDebugMode: debugStore.getIsDebugMode()
+  });
+
+  useEffect(() => {
+    const listener = () => {
+      setState({
+        logs: debugStore.getLogs(),
+        isDebugMode: debugStore.getIsDebugMode()
+      });
+    };
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }, []);
+
+  return {
+    ...state,
+    addLog: debugStore.addLog,
+    clearLogs: debugStore.clearLogs,
+    toggleDebugMode: debugStore.toggleDebugMode
+  };
+}
 
 // Global Error Listener
 if (typeof window !== 'undefined') {
   window.onerror = (message, source, lineno, colno, error) => {
-    useDebugStore.getState().addLog('error', String(message), error?.stack);
+    debugStore.addLog('error', String(message), error?.stack);
   };
 
   window.onunhandledrejection = (event) => {
-    useDebugStore.getState().addLog('error', `Promise Rejected: ${event.reason}`);
+    debugStore.addLog('error', `Promise Rejected: ${event.reason}`);
   };
 }
