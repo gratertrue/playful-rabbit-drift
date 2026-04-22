@@ -24,6 +24,7 @@ const FoodSearch = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [translatedName, setTranslatedName] = useState('');
   const [translating, setTranslating] = useState(false);
@@ -36,6 +37,7 @@ const FoodSearch = () => {
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
+      setHasSearched(false);
       return;
     }
 
@@ -46,8 +48,11 @@ const FoodSearch = () => {
     try {
       const data = await searchFoods(searchQuery, 15);
       setResults(data);
+      setHasSearched(true);
     } catch (err: any) {
-      if (err.name !== 'AbortError') showError("Gagal mencari makanan");
+      if (err.name !== 'AbortError') {
+        showError("Koneksi bermasalah atau Kunci API belum diatur.");
+      }
     } finally {
       setLoading(false);
     }
@@ -56,7 +61,7 @@ const FoodSearch = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query) performSearch(query);
-    }, 400);
+    }, 600); // Debounce sedikit lebih lama untuk mobile
     return () => clearTimeout(timer);
   }, [query, performSearch]);
 
@@ -69,7 +74,7 @@ const FoodSearch = () => {
         handleSelectFood(product);
         showSuccess("Produk ditemukan!");
       } else {
-        showError("Produk tidak ditemukan di database Open Food Facts");
+        showError("Produk tidak ditemukan di database.");
       }
     } catch (err) {
       showError("Gagal memproses barcode");
@@ -116,12 +121,12 @@ const FoodSearch = () => {
           <Input 
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari makanan..."
+            placeholder="Cari makanan (Ayam, Nasi, dll)..."
             className="pl-12 pr-12 bg-slate-900/80 border-slate-800 text-white h-14 text-lg rounded-2xl focus:ring-2 focus:ring-cyan-500/50 transition-all shadow-2xl"
           />
           {query && (
             <button 
-              onClick={() => { setQuery(''); setResults([]); }}
+              onClick={() => { setQuery(''); setResults([]); setHasSearched(false); }}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1 hover:bg-slate-800 rounded-full transition-colors"
             >
               <X className="h-5 w-5" />
@@ -170,6 +175,18 @@ const FoodSearch = () => {
             </Card>
           );
         })}
+
+        {hasSearched && results.length === 0 && !loading && (
+          <div className="text-center py-12 space-y-4">
+            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 inline-block">
+              <AlertCircle className="h-12 w-12 text-slate-700 mx-auto mb-4" />
+              <h3 className="text-white font-bold text-xl">Makanan Tidak Ditemukan</h3>
+              <p className="text-slate-500 max-w-xs mx-auto mt-2">
+                Coba gunakan kata kunci yang lebih umum atau dalam Bahasa Inggris (misal: "Chicken" untuk Ayam).
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <Dialog open={!!selectedFood} onOpenChange={(open) => !open && setSelectedFood(null)}>
