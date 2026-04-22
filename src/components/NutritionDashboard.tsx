@@ -2,20 +2,15 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
-import { getNutrientValue } from '@/lib/usda-api';
-import { Flame, Target, Trophy, History, ScanBarcode } from 'lucide-react';
+import { getNutrientValue, calculateSmartScore } from '@/lib/usda-api';
+import { Flame, Target, Trophy, History } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import SmartSuggestions from './SmartSuggestions';
 import GrowthImpactInfo from './GrowthImpactInfo';
 import SmartNutritionAnalyzer from './SmartNutritionAnalyzer';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface NutritionDashboardProps {
-  onScanClick?: () => void;
-}
-
-const NutritionDashboard = ({ onScanClick }: NutritionDashboardProps) => {
+const NutritionDashboard = () => {
   const { logs, profile, achievements, getAverageNutrients } = useNutritionStore();
   
   const today = new Date().setHours(0,0,0,0);
@@ -42,14 +37,6 @@ const NutritionDashboard = ({ onScanClick }: NutritionDashboardProps) => {
 
   return (
     <div className="space-y-3 animate-in fade-in duration-300">
-      <Button 
-        onClick={onScanClick}
-        className="w-full h-14 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-3 group"
-      >
-        <ScanBarcode className="h-6 w-6 group-hover:scale-110 transition-transform" />
-        <span>Scan Barcode Produk</span>
-      </Button>
-
       {(isCarbsLowTrend || isProteinLowTrend) && (
         <Card className="bg-amber-500/10 border-amber-500/20 border-l-2 border-l-amber-500">
           <CardContent className="p-2 flex items-start gap-2">
@@ -135,7 +122,7 @@ const NutritionDashboard = ({ onScanClick }: NutritionDashboardProps) => {
                         <p className="text-[8px] text-slate-500">{log.amount}g • {Math.round(getNutrientValue(log.food.foodNutrients, "Energy") * (log.amount/100))} kkal</p>
                       </div>
                       <div className="text-[8px] font-black text-cyan-400 bg-cyan-500/10 px-1 py-0.5 rounded">
-                        {Math.round(getNutrientValue(log.food.foodNutrients, "Protein"))}g P
+                        {calculateSmartScore(log.food.foodNutrients)}
                       </div>
                     </div>
                   ))

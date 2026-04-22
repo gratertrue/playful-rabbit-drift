@@ -26,12 +26,12 @@ export async function getProductByBarcode(barcode: string): Promise<FoodItem | n
       { nutrientId: 1005, nutrientName: "Carbohydrate", value: n.carbohydrates_100g || 0, unitName: "g" },
       { nutrientId: 1004, nutrientName: "Total lipid (fat)", value: n.fat_100g || 0, unitName: "g" },
       { nutrientId: 2000, nutrientName: "Sugars", value: n.sugars_100g || 0, unitName: "g" },
-      { nutrientId: 1093, nutrientName: "Sodium", value: (n.sodium_100g || 0) * 1000, unitName: "mg" },
+      { nutrientId: 1093, nutrientName: "Sodium", value: n.sodium_100g * 1000 || 0, unitName: "mg" },
       { nutrientId: 1079, nutrientName: "Fiber", value: n.fiber_100g || 0, unitName: "g" },
     ];
 
     return {
-      fdcId: parseInt(barcode) || Math.floor(Math.random() * 1000000),
+      fdcId: parseInt(barcode), // Gunakan barcode sebagai ID unik
       description: `${p.product_name} (${p.brands || 'Tanpa Merk'})`,
       foodNutrients,
       brandOwner: p.brands,

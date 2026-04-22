@@ -25,8 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { showSuccess } from '@/utils/toast';
-import { Scale, User as UserIcon, Activity, Utensils, Calendar, Calculator } from 'lucide-react';
+import { Scale, User as UserIcon, Activity, Utensils, Calendar, Calculator, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -48,7 +49,7 @@ const Index = () => {
               <WaterTracker />
               <Goals />
             </div>
-            <NutritionDashboard onScanClick={() => setActiveTab('search')} />
+            <NutritionDashboard />
             <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
               <CardContent className="p-2 flex items-center justify-around">
                 <Button variant="ghost" onClick={() => setActiveTab('recipes')} className="flex flex-col gap-1 h-auto py-1 text-slate-400 hover:text-cyan-400">
