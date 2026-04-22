@@ -1,9 +1,10 @@
 /**
  * USDA & Translation API Utility
+ * Menggunakan Environment Variables untuk keamanan.
  */
 
-// Menggunakan kunci API baru yang diberikan pengguna
-const USDA_API_KEY = "lPjMa22MuuIYtCILxkHRdEHse3eM7uqH5sHEbSKR"; 
+// Mengambil kunci dari variabel lingkungan (Vite)
+const USDA_API_KEY = import.meta.env.VITE_USDA_API_KEY; 
 const BASE_URL = "https://api.nal.usda.gov/fdc/v1";
 
 export interface Nutrient {
@@ -39,6 +40,10 @@ function isLikelyEnglish(text: string): boolean {
 }
 
 export async function searchFoods(query: string, pageSize: number = 15): Promise<FoodItem[]> {
+  if (!USDA_API_KEY || USDA_API_KEY === 'DEMO_KEY') {
+    throw new Error("Kunci API tidak ditemukan. Pastikan VITE_USDA_API_KEY sudah diatur di variabel lingkungan.");
+  }
+
   try {
     let searchTerms = query;
     if (!isLikelyEnglish(query)) {
@@ -57,7 +62,7 @@ export async function searchFoods(query: string, pageSize: number = 15): Promise
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       if (response.status === 403) {
-        throw new Error("Kunci API USDA bermasalah. Silakan periksa kembali kunci Anda.");
+        throw new Error("Kunci API USDA bermasalah atau telah dinonaktifkan.");
       }
       throw new Error(errorData.error?.message || `API Error: ${response.status}`);
     }
