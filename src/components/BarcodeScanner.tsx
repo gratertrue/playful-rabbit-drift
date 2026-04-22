@@ -1,16 +1,10 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X, Camera, Zap } from 'lucide-react';
-
-// Mendefinisikan tipe global agar TypeScript tidak protes
-declare global {
-  interface Window {
-    Html5QrcodeScanner: any;
-  }
-}
 
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
@@ -18,17 +12,12 @@ interface BarcodeScannerProps {
 }
 
 const BarcodeScanner = ({ onScan, onClose }: BarcodeScannerProps) => {
-  const scannerRef = useRef<any>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Pastikan pustaka sudah dimuat dari CDN
-    if (typeof window.Html5QrcodeScanner === 'undefined') {
-      console.error("Html5QrcodeScanner library not loaded from CDN");
-      return;
-    }
-
-    // Inisialisasi scanner menggunakan objek global window
-    const scanner = new window.Html5QrcodeScanner(
+    // Inisialisasi scanner
+    const scanner = new Html5QrcodeScanner(
       "reader",
       { 
         fps: 10, 
@@ -39,15 +28,15 @@ const BarcodeScanner = ({ onScan, onClose }: BarcodeScannerProps) => {
     );
 
     scanner.render(
-      (decodedText: string) => {
+      (decodedText) => {
         scanner.clear().then(() => {
           onScan(decodedText);
-        }).catch((err: any) => {
+        }).catch(err => {
           console.error("Failed to clear scanner", err);
           onScan(decodedText);
         });
       },
-      () => {
+      (errorMessage) => {
         // Abaikan error scanning rutin
       }
     );
@@ -56,7 +45,7 @@ const BarcodeScanner = ({ onScan, onClose }: BarcodeScannerProps) => {
 
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.clear().catch((err: any) => console.error("Cleanup error", err));
+        scannerRef.current.clear().catch(err => console.error("Cleanup error", err));
       }
     };
   }, [onScan]);
