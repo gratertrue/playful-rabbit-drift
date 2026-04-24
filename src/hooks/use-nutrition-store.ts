@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FoodItem, calculateSmartScore, getNutrientValue } from '@/lib/usda-api';
+import { FoodItem, Nutrient, getNutrientValue } from '@/lib/usda-api';
 import confetti from 'canvas-confetti';
 
 export interface UserProfile {
@@ -50,6 +50,12 @@ export interface WearableData {
   isSleeping: boolean;
   sleepStartTime: number | null;
   sleepHistory: SleepSession[];
+}
+
+export interface MealPlan {
+  id: string;
+  name: string;
+  days: { [key: string]: Recipe[] };
 }
 
 const INITIAL_PROFILE: UserProfile = {
@@ -185,7 +191,7 @@ export function useNutritionStore() {
 
   const addRecipe = (name: string, ingredients: { food: FoodItem; amount: number }[]) => {
     const newRecipe: Recipe = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: `recipe-${Math.random().toString(36).substr(2, 9)}`,
       name,
       ingredients,
     };
@@ -227,7 +233,6 @@ export function useNutritionStore() {
   };
 
   const calculateRecommendedCalories = () => {
-    // Harris-Benedict Revised Formula
     let bmr = 0;
     if (profile.gender === 'male') {
       bmr = 88.362 + (13.397 * profile.weight) + (4.799 * profile.height) - (5.677 * profile.age);
@@ -236,10 +241,10 @@ export function useNutritionStore() {
     }
 
     const activityFactors = {
-      sedentary: 1.2, // Ringan
-      light: 1.4,     // Cukup Aktif
-      moderate: 1.6,  // Aktif
-      active: 1.8,    // Sangat Aktif
+      sedentary: 1.2,
+      light: 1.4,
+      moderate: 1.6,
+      active: 1.8,
       very_active: 2.0
     };
 
@@ -254,8 +259,6 @@ export function useNutritionStore() {
   const getAKGGoals = () => {
     const isMale = profile.gender === 'male';
     const age = profile.age;
-
-    // Simplified AKG Indonesia (Permenkes 28/2019)
     return {
       vitaminC: isMale ? 90 : 75,
       iron: isMale ? (age < 18 ? 15 : 9) : (age < 50 ? 18 : 8),
@@ -297,6 +300,37 @@ export function useNutritionStore() {
     };
   };
 
+  /**
+   * Mengonversi resep menjadi format FoodItem (untuk pencarian)
+   */
+  const convertRecipeToFood = (recipe: Recipe): FoodItem => {
+    const nutrientTotals: Record<string, { value: number, unit: string, id: number }> = {};
+    
+    recipe.ingredients.forEach(ing => {
+      const factor = ing.amount / 100;
+      ing.food.foodNutrients.forEach(n => {
+        if (!nutrientTotals[n.nutrientName]) {
+          nutrientTotals[n.nutrientName] = { value: 0, unit: n.unitName, id: n.nutrientId };
+        }
+        nutrientTotals[n.nutrientName].value += n.value * factor;
+      });
+    });
+
+    const foodNutrients: Nutrient[] = Object.entries(nutrientTotals).map(([name, data]) => ({
+      nutrientName: name,
+      value: data.value,
+      unitName: data.unit,
+      nutrientId: data.id
+    }));
+
+    return {
+      fdcId: Math.abs(recipe.id.split('').reduce((a, b) => (((a << 5) - a) + b.charCodeAt(0)) | 0, 0)),
+      description: recipe.name,
+      foodNutrients,
+      dataType: 'LocalRecipe'
+    };
+  };
+
   return { 
     profile, setProfile, 
     logs, addLog, 
@@ -306,12 +340,7 @@ export function useNutritionStore() {
     waterIntake, addWater, setWaterIntake,
     points, achievements, 
     addPoints, calculateBMI, calculateRecommendedCalories,
-    getAKGGoals, getAverageNutrients
+    getAKGGoals, getAverageNutrients,
+    convertRecipeToFood
   };
-}
-
-export interface MealPlan {
-  id: string;
-  name: string;
-  days: { [key: string]: Recipe[] };
 }

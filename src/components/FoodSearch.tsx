@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { searchFoods, FoodItem, getNutrientValue, calculateSmartScore, translateText } from '@/lib/usda-api';
 import { useNutritionStore } from '@/hooks/use-nutrition-store';
-import { Search, Loader2, ChevronRight, Globe, AlertCircle, X, ListFilter, Plus, Languages, Zap } from 'lucide-react';
+import { Search, Loader2, ChevronRight, Globe, AlertCircle, X, ListFilter, Plus, Languages, Zap, ChefHat } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from '@/utils/toast';
 import {
@@ -27,7 +27,7 @@ const FoodSearch = () => {
   const [translating, setTranslating] = useState(false);
   const [amount, setAmount] = useState(100);
   
-  const { addLog } = useNutritionStore();
+  const { addLog, recipes, convertRecipeToFood } = useNutritionStore();
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const performSearch = useCallback(async (searchQuery: string) => {
@@ -41,28 +41,40 @@ const FoodSearch = () => {
 
     setLoading(true);
     try {
-      const data = await searchFoods(searchQuery, 15);
-      setResults(data);
+      // 1. Cari di resep lokal dulu
+      const localMatches = recipes
+        .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        .map(r => convertRecipeToFood(r));
+
+      // 2. Cari di USDA API
+      const apiData = await searchFoods(searchQuery, 15);
+      
+      // 3. Gabungkan (Resep lokal di atas)
+      setResults([...localMatches, ...apiData]);
     } catch (err: any) {
       if (err.name !== 'AbortError') showError("Gagal mencari makanan");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [recipes, convertRecipeToFood]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query) performSearch(query);
-    }, 400); // Debounce lebih lama untuk akurasi pengetikan
+    }, 400);
     return () => clearTimeout(timer);
   }, [query, performSearch]);
 
   const handleSelectFood = async (food: FoodItem) => {
     setSelectedFood(food);
     setTranslatedName('');
-    setTranslating(true);
     
-    // Terjemahkan nama HANYA saat dipilih (On-Demand)
+    if (food.dataType === 'LocalRecipe') {
+      setTranslatedName(food.description);
+      return;
+    }
+
+    setTranslating(true);
     try {
       const idName = await translateText(food.description, 'en|id');
       setTranslatedName(idName);
@@ -88,7 +100,7 @@ const FoodSearch = () => {
         <Input 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cari makanan (English/Indonesia)..."
+          placeholder="Cari makanan atau resep Anda..."
           className="pl-12 pr-12 bg-slate-900/80 border-slate-800 text-white h-14 text-lg rounded-2xl focus:ring-2 focus:ring-cyan-500/50 transition-all shadow-2xl"
         />
         {query && (
@@ -104,22 +116,30 @@ const FoodSearch = () => {
       <div className="grid grid-cols-1 gap-3">
         {results.map((food) => {
           const score = calculateSmartScore(food.foodNutrients);
+          const isRecipe = food.dataType === 'LocalRecipe';
+          
           return (
             <Card 
-              key={food.fdcId} 
-              className="bg-slate-900/50 border-slate-800 hover:border-cyan-500/50 transition-all cursor-pointer overflow-hidden group"
+              key={`${food.fdcId}-${food.dataType}`} 
+              className={cn(
+                "bg-slate-900/50 border-slate-800 hover:border-cyan-500/50 transition-all cursor-pointer overflow-hidden group",
+                isRecipe && "border-purple-500/30 bg-purple-500/5"
+              )}
               onClick={() => handleSelectFood(food)}
             >
               <CardContent className="p-0 flex items-stretch">
                 <div className={cn(
                   "w-1.5 transition-all group-hover:w-3",
-                  score > 70 ? "bg-green-500" : score > 40 ? "bg-yellow-500" : "bg-red-500"
+                  isRecipe ? "bg-purple-500" : score > 70 ? "bg-green-500" : score > 40 ? "bg-yellow-500" : "bg-red-500"
                 )} />
                 <div className="p-4 flex-1 flex items-center justify-between">
                   <div className="min-w-0 pr-4">
-                    <h3 className="text-white font-bold truncate text-lg group-hover:text-cyan-400 transition-colors">
-                      {food.description}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-white font-bold truncate text-lg group-hover:text-cyan-400 transition-colors">
+                        {food.description}
+                      </h3>
+                      {isRecipe && <ChefHat className="h-4 w-4 text-purple-400 shrink-0" />}
+                    </div>
                     <div className="flex gap-2 mt-2">
                       <Badge variant="outline" className="text-[10px] border-slate-800 bg-slate-950/50 text-slate-400">
                         {Math.round(getNutrientValue(food.foodNutrients, "Energy"))} kcal
@@ -127,7 +147,9 @@ const FoodSearch = () => {
                       <Badge variant="outline" className="text-[10px] border-slate-800 bg-slate-950/50 text-blue-400">
                         {getNutrientValue(food.foodNutrients, "Protein").toFixed(1)}g Protein
                       </Badge>
-                      {food.dataType === 'Foundation' && (
+                      {isRecipe ? (
+                        <Badge className="bg-purple-500/20 text-purple-400 text-[8px] border-purple-500/30">RESEP SAYA</Badge>
+                      ) : food.dataType === 'Foundation' && (
                         <Badge className="bg-cyan-500/20 text-cyan-400 text-[8px] border-cyan-500/30">VERIFIED</Badge>
                       )}
                     </div>
@@ -154,7 +176,9 @@ const FoodSearch = () => {
               <DialogHeader>
                 <div className="flex items-center gap-2 text-cyan-400 mb-1">
                   <Zap className="h-4 w-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Analisis Nutrisi</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">
+                    {selectedFood.dataType === 'LocalRecipe' ? 'Analisis Resep Kustom' : 'Analisis Nutrisi'}
+                  </span>
                 </div>
                 <DialogTitle className="text-2xl font-bold">{selectedFood.description}</DialogTitle>
                 <div className="flex items-center gap-1.5 text-slate-500 text-xs italic">
