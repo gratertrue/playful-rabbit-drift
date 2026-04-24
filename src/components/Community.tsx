@@ -3,10 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Heart, Share2, MessageCircle, Search, Sparkles, Loader2 } from 'lucide-react';
+import { Users, Heart, Share2, MessageCircle, Search, Sparkles, Loader2, DatabaseZap } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { showError } from '@/utils/toast';
 
 interface CommunityRecipe {
@@ -21,10 +21,12 @@ interface CommunityRecipe {
 
 const Community = () => {
   const [recipes, setRecipes] = useState<CommunityRecipe[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
   const [search, setSearch] = useState('');
 
   const fetchRecipes = async () => {
+    if (!isSupabaseConfigured) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -36,7 +38,6 @@ const Community = () => {
       setRecipes(data || []);
     } catch (err: any) {
       console.error("Error fetching community recipes:", err);
-      // Jika tabel belum ada, kita tampilkan pesan edukatif
     } finally {
       setLoading(false);
     }
@@ -45,6 +46,22 @@ const Community = () => {
   useEffect(() => {
     fetchRecipes();
   }, []);
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+        <div className="p-4 bg-amber-500/10 rounded-full border border-amber-500/20">
+          <DatabaseZap className="h-10 w-10 text-amber-500" />
+        </div>
+        <div className="max-w-md space-y-2">
+          <h3 className="text-xl font-bold text-white">Supabase Belum Terhubung</h3>
+          <p className="text-sm text-slate-400">
+            Fitur komunitas memerlukan database Supabase. Silakan klik tombol <strong>"Add Supabase"</strong> di panel editor untuk mengaktifkan fitur ini.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const filteredRecipes = recipes.filter(r => 
     r.recipe_name.toLowerCase().includes(search.toLowerCase())
