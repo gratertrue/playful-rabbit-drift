@@ -66,7 +66,7 @@ const INITIAL_PROFILE: UserProfile = {
   gender: 'male',
   activityLevel: 'moderate',
   calorieGoal: 2000,
-  proteinGoal: 150,
+  proteinGoal: 60,
   carbsGoal: 250,
   waterGoal: 2500,
   goal: 'maintenance',
@@ -81,13 +81,11 @@ const INITIAL_ACHIEVEMENTS: Achievement[] = [
 ];
 
 export function useNutritionStore() {
-  // 1. Data Profil (Target)
   const [profile, setProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('nutrition_profile');
     return saved ? JSON.parse(saved) : INITIAL_PROFILE;
   });
 
-  // 2. Data Progres (Log & Riwayat) - Tetap tersimpan meskipun profil berubah
   const [logs, setLogs] = useState<LogEntry[]>(() => {
     const saved = localStorage.getItem('nutrition_logs');
     return saved ? JSON.parse(saved) : [];
@@ -117,11 +115,7 @@ export function useNutritionStore() {
     const saved = localStorage.getItem('nutrition_water');
     const lastDate = localStorage.getItem('nutrition_water_date');
     const today = new Date().toDateString();
-    
-    // Reset air jika hari sudah berganti
-    if (lastDate !== today) {
-      return 0;
-    }
+    if (lastDate !== today) return 0;
     return saved ? Number(saved) : 0;
   });
 
@@ -131,7 +125,6 @@ export function useNutritionStore() {
     return saved ? JSON.parse(saved) : INITIAL_ACHIEVEMENTS;
   });
 
-  // Sinkronisasi ke LocalStorage
   useEffect(() => {
     localStorage.setItem('nutrition_profile', JSON.stringify(profile));
     localStorage.setItem('nutrition_logs', JSON.stringify(logs));
@@ -165,14 +158,12 @@ export function useNutritionStore() {
         const startTime = prev.sleepStartTime || endTime;
         const durationMs = endTime - startTime;
         const durationHours = Number((durationMs / (1000 * 60 * 60)).toFixed(2));
-        
         const newSession: SleepSession = {
           id: Math.random().toString(36).substr(2, 9),
           startTime,
           endTime,
           durationHours
         };
-
         const history = prev.sleepHistory || [];
         return { 
           ...prev, 
@@ -186,13 +177,7 @@ export function useNutritionStore() {
   };
 
   const resetSleep = () => {
-    setWearableData(prev => ({
-      ...prev,
-      isSleeping: false,
-      sleepStartTime: null,
-      sleepHours: 0,
-      sleepHistory: []
-    }));
+    setWearableData(prev => ({ ...prev, isSleeping: false, sleepStartTime: null, sleepHours: 0, sleepHistory: [] }));
   };
 
   const addWater = (amount: number) => {
@@ -205,11 +190,7 @@ export function useNutritionStore() {
   };
 
   const addRecipe = (name: string, ingredients: { food: FoodItem; amount: number }[]) => {
-    const newRecipe: Recipe = {
-      id: `recipe-${Math.random().toString(36).substr(2, 9)}`,
-      name,
-      ingredients,
-    };
+    const newRecipe: Recipe = { id: `recipe-${Math.random().toString(36).substr(2, 9)}`, name, ingredients };
     setRecipes(prev => [...prev, newRecipe]);
     addPoints(50);
     checkAchievements('recipe_master');
@@ -220,11 +201,7 @@ export function useNutritionStore() {
   };
 
   const addMealPlan = (name: string, days: { [key: string]: Recipe[] }) => {
-    const newPlan: MealPlan = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      days,
-    };
+    const newPlan: MealPlan = { id: Math.random().toString(36).substr(2, 9), name, days };
     setMealPlans(prev => [...prev, newPlan]);
     addPoints(100);
     checkAchievements('planner_pro');
@@ -258,21 +235,26 @@ export function useNutritionStore() {
     } else {
       bmr = 447.593 + (9.247 * profile.weight) + (3.098 * profile.height) - (4.330 * profile.age);
     }
-
-    const activityFactors = {
-      sedentary: 1.2,
-      light: 1.4,
-      moderate: 1.6,
-      active: 1.8,
-      very_active: 2.0
-    };
-
+    const activityFactors = { sedentary: 1.2, light: 1.4, moderate: 1.6, active: 1.8, very_active: 2.0 };
     let tdee = bmr * activityFactors[profile.activityLevel];
-
     if (profile.goal === 'weight_loss') tdee -= 500;
     if (profile.goal === 'muscle_gain') tdee += 300;
-
     return Math.round(tdee);
+  };
+
+  const calculateRecommendedProtein = () => {
+    // Faktor protein berdasarkan aktivitas & target (Halodoc/Alodokter)
+    let factor = 0.8; // Default Sedenter
+    
+    if (profile.activityLevel === 'light') factor = 1.0;
+    if (profile.activityLevel === 'moderate') factor = 1.2;
+    if (profile.activityLevel === 'active') factor = 1.5;
+    if (profile.activityLevel === 'very_active' || profile.goal === 'muscle_gain') factor = 2.0;
+    
+    // Penyesuaian khusus target
+    if (profile.goal === 'weight_loss') factor = Math.max(factor, 1.2); // Protein tinggi saat diet agar otot tidak hilang
+
+    return Math.round(profile.weight * factor);
   };
 
   const getAKGGoals = () => {
@@ -293,9 +275,7 @@ export function useNutritionStore() {
     const now = new Date();
     const cutoff = new Date(now.setDate(now.getDate() - days)).getTime();
     const recentLogs = logs.filter(l => l.timestamp >= cutoff);
-    
     if (recentLogs.length === 0) return null;
-
     const totals = recentLogs.reduce((acc, log) => {
       const factor = log.amount / 100;
       acc.calories += getNutrientById(log.food.foodNutrients, NUTRIENT_IDS.ENERGY) * factor;
@@ -310,65 +290,36 @@ export function useNutritionStore() {
       acc.magnesium += getNutrientById(log.food.foodNutrients, NUTRIENT_IDS.MAGNESIUM) * factor;
       acc.vitaminB12 += getNutrientById(log.food.foodNutrients, NUTRIENT_IDS.VIT_B12) * factor;
       return acc;
-    }, { 
-      calories: 0, protein: 0, carbs: 0, fat: 0, 
-      vitaminC: 0, iron: 0, calcium: 0, vitaminA: 0, 
-      zinc: 0, magnesium: 0, vitaminB12: 0 
-    });
-
+    }, { calories: 0, protein: 0, carbs: 0, fat: 0, vitaminC: 0, iron: 0, calcium: 0, vitaminA: 0, zinc: 0, magnesium: 0, vitaminB12: 0 });
     return {
-      calories: totals.calories / days,
-      protein: totals.protein / days,
-      carbs: totals.carbs / days,
-      fat: totals.fat / days,
-      vitaminC: totals.vitaminC / days,
-      iron: totals.iron / days,
-      calcium: totals.calcium / days,
-      vitaminA: totals.vitaminA / days,
-      zinc: totals.zinc / days,
-      magnesium: totals.magnesium / days,
-      vitaminB12: totals.vitaminB12 / days,
+      calories: totals.calories / days, protein: totals.protein / days, carbs: totals.carbs / days, fat: totals.fat / days,
+      vitaminC: totals.vitaminC / days, iron: totals.iron / days, calcium: totals.calcium / days, vitaminA: totals.vitaminA / days,
+      zinc: totals.zinc / days, magnesium: totals.magnesium / days, vitaminB12: totals.vitaminB12 / days,
     };
   };
 
   const convertRecipeToFood = (recipe: Recipe): FoodItem => {
     const nutrientTotals: Record<string, { value: number, unit: string, id: number }> = {};
-    
     recipe.ingredients.forEach(ing => {
       const factor = ing.amount / 100;
       ing.food.foodNutrients.forEach(n => {
-        if (!nutrientTotals[n.nutrientName]) {
-          nutrientTotals[n.nutrientName] = { value: 0, unit: n.unitName, id: n.nutrientId };
-        }
+        if (!nutrientTotals[n.nutrientName]) nutrientTotals[n.nutrientName] = { value: 0, unit: n.unitName, id: n.nutrientId };
         nutrientTotals[n.nutrientName].value += n.value * factor;
       });
     });
-
     const foodNutrients: Nutrient[] = Object.entries(nutrientTotals).map(([name, data]) => ({
-      nutrientName: name,
-      value: data.value,
-      unitName: data.unit,
-      nutrientId: data.id
+      nutrientName: name, value: data.value, unitName: data.unit, nutrientId: data.id
     }));
-
     return {
       fdcId: Math.abs(recipe.id.split('').reduce((a, b) => (((a << 5) - a) + b.charCodeAt(0)) | 0, 0)),
-      description: recipe.name,
-      foodNutrients,
-      dataType: 'LocalRecipe'
+      description: recipe.name, foodNutrients, dataType: 'LocalRecipe'
     };
   };
 
   return { 
-    profile, setProfile, 
-    logs, addLog, 
-    recipes, addRecipe, deleteRecipe,
-    mealPlans, addMealPlan,
-    wearableData, toggleSleep, resetSleep,
-    waterIntake, addWater, setWaterIntake,
-    points, achievements, 
-    addPoints, calculateBMI, calculateRecommendedCalories,
-    getAKGGoals, getAverageNutrients,
-    convertRecipeToFood
+    profile, setProfile, logs, addLog, recipes, addRecipe, deleteRecipe, mealPlans, addMealPlan,
+    wearableData, toggleSleep, resetSleep, waterIntake, addWater, setWaterIntake, points, achievements, 
+    addPoints, calculateBMI, calculateRecommendedCalories, calculateRecommendedProtein,
+    getAKGGoals, getAverageNutrients, convertRecipeToFood
   };
 }
